@@ -75,7 +75,29 @@ body {
     color: var(--tx);
     min-height: 100vh;
     overflow-x: hidden;
-    transition: background .3s, color .3s
+    transition: none !important;
+    -webkit-transition: none !important
+}
+
+html:not([data-boot-state]) #auth-screen,
+html:not([data-boot-state]) #app {
+    display: none !important
+}
+
+html[data-boot-state="auth"] #app {
+    display: none !important
+}
+
+html[data-boot-state="auth"] #auth-screen {
+    display: flex !important
+}
+
+html[data-boot-state="app"] #auth-screen {
+    display: none !important
+}
+
+html[data-boot-state="app"] #app {
+    display: grid !important
 }
 
 h1,
@@ -88,7 +110,10 @@ h5 {
 }
 
 .hidden {
-    display: none !important
+    display: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important
 }
 
 input,
@@ -157,7 +182,10 @@ a {
     justify-content: center;
     background: var(--bg);
     position: relative;
-    overflow: hidden
+    overflow: hidden;
+    opacity: 1;
+    visibility: visible;
+    transition: none !important
 }
 
 #auth-screen::before {
@@ -393,7 +421,10 @@ a {
 #app {
     display: grid;
     grid-template-columns: var(--sw) 1fr;
-    min-height: 100vh
+    min-height: 100vh;
+    opacity: 1;
+    visibility: visible;
+    transition: none !important
 }
 
 #app.collapsed {
@@ -633,7 +664,7 @@ a {
     display: flex !important;
     align-items: center;
     gap: 12px;
-    margin-right: auto !important
+    margin-left: auto !important;
 }
 
 .hours-display {
@@ -683,7 +714,7 @@ a {
     font-size: .88rem;
     color: #fff;
     flex-shrink: 0;
-    border: 2px solid rgba(255, 255, 255, .2)
+    border: 2px solid rgba(255, 255, 255, .2);
 }
 
 #user-nm {
@@ -692,7 +723,8 @@ a {
     white-space: nowrap;
     max-width: 100px;
     overflow: hidden;
-    text-overflow: ellipsis
+    text-overflow: ellipsis;
+
 }
 
 #content {
@@ -827,7 +859,9 @@ a {
     border: 1px solid var(--bo);
     border-radius: var(--r);
     padding: 18px;
-    box-shadow: var(--sh)
+    box-shadow: var(--sh);
+    display: flex;
+    flex-direction: column;
 }
 
 .card-header {
@@ -856,7 +890,8 @@ a {
     margin-bottom: 14px;
     display: flex;
     align-items: center;
-    gap: 7px
+    gap: 7px;
+    flex-shrink: 0;
 }
 
 .card-title svg {
@@ -994,7 +1029,17 @@ a {
     font-size: 1.7rem;
     font-weight: 900;
     color: var(--accent-color, var(--p));
-    line-height: 1
+    line-height: 1.05;
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+}
+
+.stat-val-unit {
+    font-size: .85rem;
+    font-weight: 700;
+    color: var(--tm);
+    white-space: nowrap;
 }
 
 .stat-label {
@@ -1008,7 +1053,56 @@ a {
     display: grid;
     grid-template-columns: 1fr 280px;
     gap: 16px;
-    align-items: start
+    align-items: stretch
+}
+
+.dash-body .card.wide-card {
+    min-height: 320px;
+    display: flex;
+    flex-direction: column;
+}
+
+.dash-body .card.wide-card>.card-title {
+    flex-shrink: 0;
+}
+
+.dash-body .card.wide-card>.week-summary {
+    margin-top: auto;
+}
+
+.week-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    height: 200px;
+    width: 100%;
+}
+
+.week-chart-day {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+    min-width: 0;
+}
+
+.week-chart-value {
+    font-size: .58rem;
+    color: var(--tm);
+    font-weight: 700;
+}
+
+.week-chart-bar {
+    width: 100%;
+    border-radius: 4px 4px 0 0;
+}
+
+.week-chart-day-label {
+    font-size: .64rem;
+    color: var(--tm);
+    font-weight: 600;
+    white-space: nowrap;
 }
 
 .dash-col-main,
@@ -2516,7 +2610,7 @@ a {
 .ai-layout {
     display: flex;
     flex-direction: column;
-    height: calc(100vh - var(--th) - 40px - var(--bottom-nav));
+    height: calc(104vh - var(--th) - 1px - var(--bottom-nav));
     min-height: 350px
 }
 
@@ -3154,7 +3248,8 @@ a {
     }
 
     #user-nm {
-        display: none
+        display: inline-block;
+        max-width: 80px;
     }
 
     #menu-btn {
@@ -3163,7 +3258,7 @@ a {
 
     /* AI layout on mobile */
     .ai-layout {
-        height: calc(100dvh - var(--th) - var(--bottom-nav) - 28px)
+        height: calc(99dvh - var(--th) - var(--bottom-nav) - 29px)
     }
 
     /* Dashboard body - single column */
@@ -3903,6 +3998,38 @@ body.light .onboarding-card {
     animation: confettiFall 2s linear forwards;
     will-change: transform, opacity;
 }
+
+/* ── COMPATIBILITY MODE (Aggressive) ──
+   Option 1: disable heavy visual effects to guarantee no rendering glitches
+*/
+
+
+/* Mobile render fixes: mitigate horizontal/composite glitches on some devices */
+@media (max-width: 768px) {
+
+    .card,
+    .form-card,
+    .stat-card,
+    .sound-card,
+    #topbar,
+    #content,
+    .subject-card,
+    .fc-card,
+    .ambient-hero {
+        -webkit-transform: translateZ(0);
+        transform: translateZ(0);
+        -webkit-backface-visibility: hidden;
+        backface-visibility: hidden;
+        will-change: transform, opacity;
+    }
+
+    /* lightweight class toggled from JS to force a short repaint when needed */
+    .df-repaint-hack {
+        -webkit-transform: translateZ(0) !important;
+        transform: translateZ(0) !important;
+    }
+}
+
 
 @keyframes confettiFall {
     0% {
