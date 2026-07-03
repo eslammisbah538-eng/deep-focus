@@ -1514,47 +1514,6 @@ function getWeekNumber() {
     return Math.ceil(((d - startOfYear) / 86400000 + startOfYear.getDay() + 1) / 7);
 }
 
-/* Mobile/webview repaint helper: force a short GPU layer/toggle to avoid
-   tearing when viewport changes (volume HUD, resize, visualViewport shifts)
-   Works by toggling the `.df-repaint-hack` class (defined in CSS). */
-(function setupDeepFocusRepaintHack() {
-    try {
-        const elsSelector = 'body, #content, .card, .sound-card, .subject-card, .fc-card, .ambient-hero, #topbar';
-        let timer = null;
-
-        function doRepaint() {
-            const els = document.querySelectorAll(elsSelector);
-            if (!els || els.length === 0) return;
-            els.forEach(e => e.classList.add('df-repaint-hack'));
-            // read to force composite
-            void document.documentElement.offsetHeight;
-            // remove after short delay so it's cheap
-            setTimeout(() => els.forEach(e => e.classList.remove('df-repaint-hack')), 120);
-        }
-
-        function scheduleRepaint() {
-            if (timer) clearTimeout(timer);
-            timer = setTimeout(doRepaint, 60);
-        }
-
-        // Common triggers: scroll, touch, resize, visualViewport changes, visibility
-        document.addEventListener('scroll', scheduleRepaint, true);
-        document.addEventListener('touchstart', scheduleRepaint, { passive: true });
-        document.addEventListener('touchend', scheduleRepaint, { passive: true });
-        window.addEventListener('resize', scheduleRepaint);
-        window.addEventListener('orientationchange', scheduleRepaint);
-        document.addEventListener('visibilitychange', () => { if (!document.hidden) scheduleRepaint(); });
-        if (window.visualViewport) {
-            try { visualViewport.addEventListener('resize', scheduleRepaint); visualViewport.addEventListener('scroll', scheduleRepaint); } catch (e) { }
-        }
-
-        // expose helper for debugging / manual trigger
-        window.__df_forceRepaint = doRepaint;
-    } catch (e) {
-        console.warn('Repaint helper init failed', e);
-    }
-})();
-
 function checkAutoShowWrapped() {
     const now = new Date();
     if (now.getDay() !== 0) return; // Only on Sunday
