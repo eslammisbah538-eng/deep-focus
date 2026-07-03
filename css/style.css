@@ -3999,14 +3999,8 @@ body.light .onboarding-card {
     will-change: transform, opacity;
 }
 
-/* ── COMPATIBILITY MODE (Aggressive) ──
-   Option 1: disable heavy visual effects to guarantee no rendering glitches
-*/
-
-
 /* Mobile render fixes: mitigate horizontal/composite glitches on some devices */
 @media (max-width: 768px) {
-
     .card,
     .form-card,
     .stat-card,
