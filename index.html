@@ -87,6 +87,18 @@
         href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
+    <script>
+        (function () {
+            try {
+                const raw = localStorage.getItem('df_local');
+                const saved = raw ? JSON.parse(raw) : null;
+                const hasAccount = !!(saved && saved.name && saved.name !== 'User' && Array.isArray(saved.subjects) && Array.isArray(saved.sessions));
+                document.documentElement.setAttribute('data-boot-state', hasAccount ? 'app' : 'auth');
+            } catch (e) {
+                document.documentElement.setAttribute('data-boot-state', 'auth');
+            }
+        })();
+    </script>
 </head>
 
 <body class="dark">
@@ -102,7 +114,7 @@
             </div>
             <div class="auth-form-group">
                 <label class="auth-label">اسمك</label>
-                <input type="text" id="entry-name" placeholder="أدخل اسمك..." maxlength="40">
+                <input type="text" id="entry-name" placeholder="...أدخل اسمك" maxlength="40">
             </div>
             <div class="auth-form-group">
                 <label class="auth-label">اختر أفاتار</label>
@@ -169,8 +181,8 @@
             <button class="bnav-item active" data-section="dashboard"><i
                     data-lucide="home"></i><span>الرئيسية</span></button>
             <button class="bnav-item" data-section="pomodoro"><i data-lucide="timer"></i><span>بومودورو</span></button>
-            <button class="bnav-item" data-section="flashcards"><i
-                    data-lucide="layers"></i><span>البطاقات</span></button>
+            <button class="bnav-item" data-section="subjects"><i
+                    data-lucide="book-open"></i><span>المواد</span></button>
             <button class="bnav-item" data-section="ai-help"><i data-lucide="bot"></i><span>AI</span></button>
             <button class="bnav-item" id="bnav-more-btn"><i data-lucide="grid-3x3"></i><span>المزيد</span></button>
         </nav>
@@ -186,8 +198,8 @@
                             data-lucide="x"></i></button>
                 </div>
                 <div class="bnav-more-grid">
-                    <button class="bnav-more-item" data-section="subjects"><i
-                            data-lucide="book-open"></i><span>المواد</span></button>
+                    <button class="bnav-more-item" data-section="flashcards"><i
+                            data-lucide="layers"></i><span>البطاقات</span></button>
                     <button class="bnav-more-item" data-section="ambient"><i
                             data-lucide="music"></i><span>أصوات</span></button>
                     <button class="bnav-more-item" data-section="insights"><i
@@ -214,7 +226,7 @@
                     <div class="hours-display">
                         <i data-lucide="clock"></i>
                         <span class="hours-val" id="total-hours-val">0</span>
-                        <span class="hours-label">ساعة دراسة</span>
+                        <span class="hours-label"></span>
                     </div>
                     <span id="user-nm">User</span>
                     <div class="user-chip">
