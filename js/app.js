@@ -53,6 +53,14 @@ function uid() { return '_' + (Date.now() + Math.random()).toString(36).replace(
 function ltrD(n) { return `<bdi>${n}d</bdi>`; }
 function ltrDt(n) { return n + 'd'; } // نسخة نص فقط (للـ toast والـ system prompt)
 function today() { return new Date().toISOString().slice(0, 10); }
+function formatStudyDuration(minutes) {
+    const total = Math.max(0, Math.round(Number(minutes) || 0));
+    if (total < 60) return `${total} دقيقة`;
+    const hours = Math.floor(total / 60);
+    const mins = total % 60;
+    if (mins === 0) return `${hours} ${hours === 1 ? 'ساعة' : 'ساعات'}`;
+    return `${hours} ${hours === 1 ? 'ساعة' : 'ساعات'} و${mins} ${mins === 1 ? 'دقيقة' : 'دقائق'}`;
+}
 function daysUntil(d) { if (!d) return null; return Math.ceil((new Date(d).setHours(0, 0, 0, 0) - new Date().setHours(0, 0, 0, 0)) / 86400000); }
 function getPriority(d) { const n = daysUntil(d); if (n === null) return 'low'; if (n < 0) return 'done'; if (n <= 3) return 'critical'; if (n <= 7) return 'high'; if (n <= 14) return 'medium'; return 'low'; }
 
@@ -70,14 +78,11 @@ function selectAvatar(color, el) {
 
 // ── AUTO-LOGIN: if name exists in storage, skip auth
 function tryAutoLogin() {
-    try {
-        const saved = loadLocal();
-        if (saved && saved.name && saved.name !== 'User' && saved.name.trim() &&
-            Array.isArray(saved.subjects) && Array.isArray(saved.sessions)) {
-            startApp(saved);
-            return true;
-        }
-    } catch (e) { console.warn('Auto-login error:', e); }
+    const saved = getSavedUserData();
+    if (saved) {
+        startApp(saved, false);
+        return true;
+    }
     return false;
 }
 
@@ -111,6 +116,32 @@ function handleEntry() {
     startApp(saved, isNewAccount);
 }
 
+function showInitialScreen(showApp) {
+    const authScreen = document.getElementById('auth-screen');
+    const app = document.getElementById('app');
+    if (!authScreen || !app) return;
+
+    document.documentElement.setAttribute('data-boot-state', showApp ? 'app' : 'auth');
+
+    if (showApp) {
+        authScreen.classList.add('hidden');
+        app.classList.remove('hidden');
+    } else {
+        app.classList.add('hidden');
+        authScreen.classList.remove('hidden');
+    }
+}
+
+function getSavedUserData() {
+    try {
+        const saved = loadLocal();
+        if (saved && saved.name && saved.name !== 'User' && Array.isArray(saved.subjects) && Array.isArray(saved.sessions)) {
+            return saved;
+        }
+    } catch (e) { console.warn('Saved-user read error:', e); }
+    return null;
+}
+
 function startApp(data, isNewAccount) {
     // Ensure all required arrays exist (defensive merge)
     if (!Array.isArray(data.subjects)) data.subjects = [];
@@ -120,12 +151,15 @@ function startApp(data, isNewAccount) {
     if (!data.totalCardReviews) data.totalCardReviews = 0;
 
     G.data = data; G.chatHistory = []; G.navHistory = [];
-    document.getElementById('auth-screen').classList.add('hidden');
-    document.getElementById('app').classList.remove('hidden');
+    showInitialScreen(true);
+
     const av = document.getElementById('user-av');
-    av.style.background = G.data.avatarColor || '#3b82f6';
-    av.textContent = (G.data.name || 'U')[0].toUpperCase();
-    document.getElementById('user-nm').textContent = G.data.name || 'User';
+    if (av) {
+        av.style.background = G.data.avatarColor || '#3b82f6';
+        av.textContent = (G.data.name || 'U')[0].toUpperCase();
+    }
+    const userName = document.getElementById('user-nm');
+    if (userName) userName.textContent = G.data.name || 'User';
     applyTheme(G.theme); updateTopbar(); updateStreak(); navigate('dashboard'); updateFCBadge();
     checkAutoShowWrapped();
     // أرشفة تلقائية صامتة عند الدخول (silent=true لتفادي تعدد التوست مع navigate)
@@ -140,8 +174,7 @@ function logout() {
     if (!confirm('تسجيل الخروج؟')) return;
     clearInterval(G.pomo.timer); stopAllSounds();
     G.data = null; G.chatHistory = []; G.navHistory = [];
-    document.getElementById('app').classList.add('hidden');
-    document.getElementById('auth-screen').classList.remove('hidden');
+    showInitialScreen(false);
     buildAvatarPicker();
 }
 
@@ -165,8 +198,7 @@ function deleteAccountAndLogout() {
     if (!deleteAccount(true)) return; // المستخدم لغى التأكيد
     clearInterval(G.pomo.timer); stopAllSounds();
     G.data = null; G.chatHistory = []; G.navHistory = [];
-    document.getElementById('app').classList.add('hidden');
-    document.getElementById('auth-screen').classList.remove('hidden');
+    showInitialScreen(false);
     const ni = document.getElementById('entry-name'); if (ni) ni.value = '';
     const er = document.getElementById('auth-error'); if (er) er.style.display = 'none';
     buildAvatarPicker();
@@ -189,9 +221,8 @@ function injectDeleteAccountButton(referenceBtnId, newId) {
 // ── TOPBAR & STREAK
 function updateTopbar() {
     const totalMin = (G.data.sessions || []).filter(s => s.type === 'pomo').reduce((a, s) => a + (s.duration || 0), 0);
-    const totalHours = (totalMin / 60).toFixed(1);
     const el = document.getElementById('total-hours-val');
-    if (el) el.textContent = totalHours;
+    if (el) el.textContent = formatStudyDuration(totalMin);
 }
 function updateStreak() {
     const t = today();
@@ -271,10 +302,13 @@ function renderDashboard() {
     const now = new Date();
     const todayMin = G.data.sessions.filter(s => s.date === today() && s.type === 'pomo').reduce((a, s) => a + s.duration, 0);
     const dueCards = getDueCards().length;
+    const todayHtml = todayMin < 60
+        ? `<div class="stat-val"><span>${todayMin}</span><span class="stat-val-unit">دقيقة</span></div>`
+        : `<div class="stat-val">${formatStudyDuration(todayMin)}</div>`;
     document.getElementById('dash-stats').innerHTML =
         `<div class="stat-card" style="--accent-color:#ffb347"><span class="stat-icon"><i data-lucide="flame"></i></span><div class="stat-val">${G.data.streak.count}</div><div class="stat-label">يوم متتالي</div></div>` +
         `<div class="stat-card" style="--accent-color:var(--p)"><span class="stat-icon"><i data-lucide="book-open"></i></span><div class="stat-val">${G.data.subjects.filter(s => !s.done && !s.archived).length}</div><div class="stat-label">مادة نشطة</div></div>` +
-        `<div class="stat-card" style="--accent-color:var(--ac)"><span class="stat-icon"><i data-lucide="timer"></i></span><div class="stat-val">${todayMin}</div><div class="stat-label">m اليوم</div></div>` +
+        `<div class="stat-card" style="--accent-color:var(--ac)"><span class="stat-icon"><i data-lucide="timer"></i></span>${todayHtml}<div class="stat-label">اليوم</div></div>` +
         `<div class="stat-card" style="--accent-color:var(--ok)"><span class="stat-icon"><i data-lucide="layers"></i></span><div class="stat-val">${dueCards}</div><div class="stat-label">بطاقات للمراجعة</div></div>`;
     lucide.createIcons();
     renderExamCountdownWidget();
@@ -453,26 +487,26 @@ function formatCountdown(ms) {
     const mins = Math.floor((totalSecs % 3600) / 60);
     const isToday = days === 0;
 
+    const formatHours = (value) => `${value} ${value === 1 ? 'ساعة' : 'ساعات'}`;
+    const formatMinutes = (value) => `${value} ${value === 1 ? 'دقيقة' : 'دقائق'}`;
+    const formatDays = (value) => `${value} ${value === 1 ? 'يوم' : 'أيام'}`;
+
     let text = '';
 
     if (days === 0 && hours === 0) {
-        // أقل من ساعة
-        if (mins <= 1) text = 'أقل من 1m';
-        else text = mins + 'm';
+        text = mins <= 1 ? 'أقل من دقيقة' : formatMinutes(mins);
     } else if (days === 0) {
-        // نفس اليوم
-        text = hours + 'h';
-        if (hours < 3 && mins > 0) text += ' ' + mins + 'm';
+        text = formatHours(hours);
+        if (hours < 3 && mins > 0) text += ` و${formatMinutes(mins)}`;
     } else if (days === 1) {
-        text = hours > 0 ? '1d ' + hours + 'h' : '1d';
+        text = hours > 0 ? `${formatDays(1)} و${formatHours(hours)}` : formatDays(1);
     } else if (days === 2) {
-        text = hours > 0 ? '2d ' + hours + 'h' : '2d';
+        text = hours > 0 ? `${formatDays(2)} و${formatHours(hours)}` : formatDays(2);
     } else {
-        // 3 أيام فأكثر
         if (days <= 7 && hours > 0) {
-            text = days + 'd ' + hours + 'h';
+            text = `${formatDays(days)} و${formatHours(hours)}`;
         } else {
-            text = days + 'd';
+            text = formatDays(days);
         }
     }
 
@@ -609,7 +643,7 @@ function buildSubjectCard(s, isArchived, isNearest) {
     const footerActions = isArchived
         ? `<button class="btn-restore" onclick="restoreSubject('${s.id}')"><i data-lucide="rotate-ccw"></i> استعادة</button>`
         : `<div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
-                    ${studiedTodaySc > 0 ? `<span style="font-size:.7rem;font-weight:700;color:var(--ok);background:rgba(16,212,138,.1);padding:3px 8px;border-radius:6px;border:1px solid rgba(16,212,138,.25)">✓ ${studiedTodaySc}د</span>` : ''}
+                    ${studiedTodaySc > 0 ? `<span style="font-size:.7rem;font-weight:700;color:var(--ok);background:rgba(16,212,138,.1);padding:3px 8px;border-radius:6px;border:1px solid rgba(16,212,138,.25)">✓ ${formatStudyDuration(studiedTodaySc)}</span>` : ''}
                     <button style="background:var(--p);color:#fff;border:none;padding:4px 11px;border-radius:6px;font-size:.72rem;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:4px;transition:all .2s;font-family:var(--f-b)" onmouseover="this.style.background='var(--pd)'" onmouseout="this.style.background='var(--p)'" onclick="navigatePomodoro('${s.id}')"><i data-lucide="play" style="width:11px;height:11px"></i> ذاكر</button>
                    </div>`;
 
@@ -625,7 +659,7 @@ function buildSubjectCard(s, isArchived, isNearest) {
                         </div>
                     </div>
                     ${examHtml}
-                    ${estMin > 0 ? `<div><div class="sc-prog-bar"><div class="sc-prog-fill" style="width:${pct}%;background:${isDoneColor ? 'var(--td)' : s.color}"></div></div><div class="sc-prog-label"><span>${studied}د</span><span>${pct}%</span></div></div>` : ''}
+                    ${estMin > 0 ? `<div><div class="sc-prog-bar"><div class="sc-prog-fill" style="width:${pct}%;background:${isDoneColor ? 'var(--td)' : s.color}"></div></div><div class="sc-prog-label"><span>${formatStudyDuration(studied)}</span><span>${pct}%</span></div></div>` : ''}
                     <div class="sc-footer">
                         <span class="sc-hours">${s.hours ? s.hours + 'h' : ''}</span>
                         <div style="display:flex;align-items:center;gap:5px">
@@ -732,7 +766,7 @@ function renderPomodoro() {
 function renderPomoLog() {
     const log = G.data.sessions.filter(s => s.date === today()).slice(-8).reverse(); const el = document.getElementById('pomo-log');
     if (!log.length) { el.innerHTML = `<div style="font-size:.76rem;color:var(--td);text-align:center;padding:14px">لا جلسات اليوم</div>`; return; }
-    el.innerHTML = log.map(s => { const sub = G.data.subjects.find(x => x.id === s.subjectId); const t = new Date(s.ts || Date.now()).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' }); return `<div class="pomo-log-item"><div class="pomo-log-dot ${s.type === 'break' ? 'break' : ''}"></div><div class="pomo-log-info"><div>${s.type === 'pomo' ? 'تركيز' : 'راحة'} — ${s.duration}د${sub ? ' · ' + sub.name : ''}</div><div class="pomo-log-time">${t}</div></div></div>`; }).join('');
+    el.innerHTML = log.map(s => { const sub = G.data.subjects.find(x => x.id === s.subjectId); const t = new Date(s.ts || Date.now()).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' }); return `<div class="pomo-log-item"><div class="pomo-log-dot ${s.type === 'break' ? 'break' : ''}"></div><div class="pomo-log-info"><div>${s.type === 'pomo' ? 'تركيز' : 'راحة'} — ${formatStudyDuration(s.duration)}${sub ? ' · ' + sub.name : ''}</div><div class="pomo-log-time">${t}</div></div></div>`; }).join('');
 }
 function getDurations() { return { focus: parseInt(document.getElementById('pomo-focus-dur')?.value || 25), short: parseInt(document.getElementById('pomo-short-dur')?.value || 5), long: parseInt(document.getElementById('pomo-long-dur')?.value || 15) }; }
 function updatePomoUI() {
@@ -784,7 +818,7 @@ function resetPomo() {
             const session = { id: uid(), subjectId: subId || '', date: today(), duration: elapsedMins, type: 'pomo', ts: Date.now() };
             G.data.sessions.push(session);
             saveData(); updateStreak(); updateTopbar(); renderPomoLog();
-            showToast('تم حفظ ' + elapsedMins + 'د ✓');
+            showToast('تم حفظ ' + formatStudyDuration(elapsedMins) + ' ✓');
         }
     }
     clearInterval(G.pomo.timer);
@@ -1480,6 +1514,47 @@ function getWeekNumber() {
     return Math.ceil(((d - startOfYear) / 86400000 + startOfYear.getDay() + 1) / 7);
 }
 
+/* Mobile/webview repaint helper: force a short GPU layer/toggle to avoid
+   tearing when viewport changes (volume HUD, resize, visualViewport shifts)
+   Works by toggling the `.df-repaint-hack` class (defined in CSS). */
+(function setupDeepFocusRepaintHack() {
+    try {
+        const elsSelector = 'body, #content, .card, .sound-card, .subject-card, .fc-card, .ambient-hero, #topbar';
+        let timer = null;
+
+        function doRepaint() {
+            const els = document.querySelectorAll(elsSelector);
+            if (!els || els.length === 0) return;
+            els.forEach(e => e.classList.add('df-repaint-hack'));
+            // read to force composite
+            void document.documentElement.offsetHeight;
+            // remove after short delay so it's cheap
+            setTimeout(() => els.forEach(e => e.classList.remove('df-repaint-hack')), 120);
+        }
+
+        function scheduleRepaint() {
+            if (timer) clearTimeout(timer);
+            timer = setTimeout(doRepaint, 60);
+        }
+
+        // Common triggers: scroll, touch, resize, visualViewport changes, visibility
+        document.addEventListener('scroll', scheduleRepaint, true);
+        document.addEventListener('touchstart', scheduleRepaint, { passive: true });
+        document.addEventListener('touchend', scheduleRepaint, { passive: true });
+        window.addEventListener('resize', scheduleRepaint);
+        window.addEventListener('orientationchange', scheduleRepaint);
+        document.addEventListener('visibilitychange', () => { if (!document.hidden) scheduleRepaint(); });
+        if (window.visualViewport) {
+            try { visualViewport.addEventListener('resize', scheduleRepaint); visualViewport.addEventListener('scroll', scheduleRepaint); } catch (e) { }
+        }
+
+        // expose helper for debugging / manual trigger
+        window.__df_forceRepaint = doRepaint;
+    } catch (e) {
+        console.warn('Repaint helper init failed', e);
+    }
+})();
+
 function checkAutoShowWrapped() {
     const now = new Date();
     if (now.getDay() !== 0) return; // Only on Sunday
@@ -1644,7 +1719,7 @@ function buildSystemPrompt() {
    الامتحان: ${cd === null ? 'غير محدد' : examEnded ? 'انتهى' : 'متبقي ' + cd.text}
    الأولوية: ${urgency}
    إجمالي الدراسة: ${Math.round(studied / 60 * 10) / 10}h${target > 0 ? ' من ' + Math.round(target / 60) + 'h هدف (' + (progress || 0) + '%)' : ''}
-   هذا الأسبوع: ${Math.round(last7 / 60 * 10) / 10}h | اليوم: ${studiedToday}m | هدف اليوم: ${goal === null ? 'غير محدد (لسه ناقص تاريخ امتحان أو ساعات هدف)' : goal + 'm (= الباقي ÷ الأيام المتبقية)'}
+   هذا الأسبوع: ${Math.round(last7 / 60 * 10) / 10}h | اليوم: ${formatStudyDuration(studiedToday)} | هدف اليوم: ${goal === null ? 'غير محدد (لسه ناقص تاريخ امتحان أو ساعات هدف)' : formatStudyDuration(goal) + ' (= الباقي ÷ الأيام المتبقية)'}
    البطاقات: ${subCards > 0 ? subCards + ' بطاقة (' + subDue + ' للمراجعة، ' + subMastered + ' محفوظة)' : 'لا بطاقات'}
    ${hint}`;
     }).join('\n\n') || '▸ لا مواد مسجلة بعد';
@@ -1665,7 +1740,7 @@ function buildSystemPrompt() {
     const dailyBreakdown = last7dates.map(d => {
         const dayMin = allSess.filter(s => s.date === d).reduce((a, s) => a + s.duration, 0);
         const isToday = d === today();
-        return `${isToday ? '• اليوم' : '• ' + new Date(d).toLocaleDateString('ar-EG', { weekday: 'short', day: 'numeric' })}: ${dayMin}m${dayMin >= 60 ? ' ✓' : dayMin === 0 ? ' —' : ''}`;
+        return `${isToday ? '• اليوم' : '• ' + new Date(d).toLocaleDateString('ar-EG', { weekday: 'short', day: 'numeric' })}: ${formatStudyDuration(dayMin)}${dayMin >= 60 ? ' ✓' : dayMin === 0 ? ' —' : ''}`;
     }).join('\n');
 
     // ── حالة فورية (context للمحادثة)
@@ -1673,9 +1748,9 @@ function buildSystemPrompt() {
     const urgentSub = subsWithExamMs[0] ? subsWithExamMs[0].s : null;
     const urgentMs = subsWithExamMs[0] ? subsWithExamMs[0].ms : null;
     const currentStatus = todayMin === 0 ? 'لم يبدأ المذاكرة بعد اليوم' :
-        todayMin < 30 ? `بدأ للتو (${todayMin}m)` :
+        todayMin < 30 ? `بدأ للتو (${formatStudyDuration(todayMin)})` :
             todayMin >= 120 ? `يوم ممتاز (${Math.round(todayMin / 60 * 10) / 10}h النهارده)` :
-                `${todayMin}m اليوم`;
+                `${formatStudyDuration(todayMin)} اليوم`;
 
     return `أنت مساعد دراسي شخصي ذكي اسمك "فوكس". أسلوبك: مباشر، صادق، عملي، تشجيعي لكن واقعي. لا تعطي كلاماً عاماً أبداً — كل رد يجب أن يتضمن أرقاماً وتفاصيل حقيقية. تحدث بثقة كأنك تعرف الطالب شخصياً — لا تقل أبداً "مذكور في بياناتك" أو "وفقاً لسجلاتك" أو أي عبارة تكشف أنك تقرأ من داتا. قل المعلومة مباشرة كأنك تعرفها.
 
@@ -1687,14 +1762,14 @@ function buildSystemPrompt() {
 الحالة الآن: ${currentStatus}
 
 ━━━ الوضع الراهن (مهم جداً) ━━━
-اليوم: ${todayMin}m مذاكرة
+اليوم: ${formatStudyDuration(todayMin)} مذاكرة
 الأسبوع: ${weekly.totalHours}h في ${weekly.activeDays}d نشطة (تقييم: ${weekly.rating})
 ${urgentSub ? 'أخطر مادة الآن: ' + urgentSub.name + ' — امتحانها بعد ' + formatCountdown(urgentMs).text : 'لا مواد عاجلة حالياً'}
 بطاقات تنتظر المراجعة: ${dueCards} من أصل ${totalCards} (محفوظة: ${masteredCards})
 
 ━━━ تفصيل آخر 7 أيام ━━━
 ${dailyBreakdown}
-متوسط الجلسة: ${weekly.avgSession}m | أفضل يوم تاريخياً: ${dayNames[bestDayIdx]} | أفضل وقت: ${peakLabel}
+متوسط الجلسة: ${formatStudyDuration(weekly.avgSession)} | أفضل يوم تاريخياً: ${dayNames[bestDayIdx]} | أفضل وقت: ${peakLabel}
 
 ━━━ المواد بالتفصيل ━━━
 ${subsDetail}
@@ -1803,14 +1878,14 @@ function buildSubjectProgressRow(s) {
     // badge اليوم الواضح
     const todayBadge = (() => {
         if (s.archived) return '';
-        const goal = s.dailyGoal;
+        const goal = getAutoGoal(s);
         if (goal === null) return ''; // مفيش تاريخ امتحان و/أو ساعات هدف محددة — لا أساس لعرض هدف يومي
         if (s.studiedToday >= goal) {
-            return `<span style="font-size:.67rem;font-weight:700;color:var(--ok);background:rgba(16,212,138,.12);padding:2px 8px;border-radius:8px;border:1px solid rgba(16,212,138,.3)">✓ ${s.studiedToday}m / ${goal}m</span>`;
+            return `<span style="font-size:.67rem;font-weight:700;color:var(--ok);background:rgba(16,212,138,.12);padding:2px 8px;border-radius:8px;border:1px solid rgba(16,212,138,.3)">✓ ${formatStudyDuration(s.studiedToday)} / ${formatStudyDuration(goal)}</span>`;
         } else if (s.studiedToday > 0) {
-            return `<span style="font-size:.67rem;font-weight:700;color:var(--wa);background:rgba(255,179,71,.1);padding:2px 8px;border-radius:8px;border:1px solid rgba(255,179,71,.25)">⏱ ${s.studiedToday}m / ${goal}m</span>`;
+            return `<span style="font-size:.67rem;font-weight:700;color:var(--wa);background:rgba(255,179,71,.1);padding:2px 8px;border-radius:8px;border:1px solid rgba(255,179,71,.25)">⏱ ${formatStudyDuration(s.studiedToday)} / ${formatStudyDuration(goal)}</span>`;
         } else {
-            return `<span style="font-size:.67rem;font-weight:600;color:var(--td);background:var(--s3);padding:2px 8px;border-radius:8px">○ 0 / ${goal}m</span>`;
+            return `<span style="font-size:.67rem;font-weight:600;color:var(--td);background:var(--s3);padding:2px 8px;border-radius:8px">○ 0 / ${formatStudyDuration(goal)}</span>`;
         }
     })();
     const cardsBadge = s.subCards > 0
@@ -1854,16 +1929,31 @@ function toggleInsightsArchive() {
     if (list) list.classList.toggle('hidden', !insightsArchiveOpen);
     if (chevron) chevron.style.transform = insightsArchiveOpen ? 'rotate(180deg)' : 'rotate(0deg)';
 }
-function getAutoGoal(s) {
-    // الهدف اليومي رقم حقيقي بس لو متوفر أساس فعلي لحسابه: تاريخ امتحان + ساعات هدف.
-    // لو ناقص أي منهم (أو الاتنين) مفيش أساس للحساب — نرجّع null بدل رقم وهمي (كان فيه ديفولت 15-30 دقيقة بلا معنى)
-    const dLeft = daysUntil(s.examDate);
+function getRemainingStudyDays(subject, now = new Date()) {
+    if (!subject?.examDate) return null;
+    const examDate = new Date(subject.examDate);
+    const today = new Date(now);
+    examDate.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+    const diffDays = Math.ceil((examDate - today) / 86400000);
+    return Math.max(1, diffDays);
+}
+
+function getSubjectStudiedMinutes(subjectId) {
+    if (!G.data?.sessions) return 0;
+    return G.data.sessions
+        .filter(ss => ss.type === 'pomo' && ss.subjectId === subjectId)
+        .reduce((a, ss) => a + (ss.duration || 0), 0);
+}
+
+function getAutoGoal(s, now = new Date()) {
+    // الهدف اليومي يُحسب من جديد كل مرة بناءً على الزمن المتبقي والأيام المتبقية.
+    const dLeft = getRemainingStudyDays(s, now);
     const hasTarget = (s.hours || 0) > 0;
     if (dLeft === null || !hasTarget) return null;
     if (dLeft <= 0) return null; // الامتحان انتهى أو اليوم — مفيش "هدف يومي" مستقبلي يُحسب
-    const allSess = G.data.sessions.filter(ss => ss.type === 'pomo');
-    const studied = allSess.filter(ss => ss.subjectId === s.id).reduce((a, ss) => a + ss.duration, 0);
-    const targetMin = s.hours * 60;
+    const targetMin = Number(s.hours || 0) * 60;
+    const studied = getSubjectStudiedMinutes(s.id);
     const remaining = Math.max(0, targetMin - studied);
     const dailyNeeded = Math.round(remaining / dLeft);
     return Math.max(15, Math.min(dailyNeeded, 120));
@@ -1947,9 +2037,9 @@ function renderInsights() {
         .forEach(s => alerts.push({ type: 'er', icon: 'alert-triangle', msg: `امتحان <strong>${s.name}</strong> ${daysUntil(s.examDate) === 0 ? 'اليوم!' : 'بعد ' + ltrD(daysUntil(s.examDate)) + ' فقط!'}` }));
     subProgress.filter(s => !s.done && !s.archived && s.dLeft !== null && s.dLeft >= 0 && s.dLeft <= 14 && s.studied === 0)
         .forEach(s => alerts.push({ type: 'er', icon: 'book-open', msg: `لم تذاكر <strong>${s.name}</strong> بعد والامتحان بعد ${ltrD(s.dLeft)}` }));
-    if (dueCards > 10) alerts.push({ type: 'wa', icon: 'layers', msg: `<strong>${dueCards}</strong> بطاقة للمراجعة — <bdi>10m</bdi> الآن تمنع التراكم` });
+    if (dueCards > 10) alerts.push({ type: 'wa', icon: 'layers', msg: `<strong>${dueCards}</strong> بطاقة للمراجعة — ${formatStudyDuration(10)} الآن تمنع التراكم` });
     if (activeDays7 < 3) alerts.push({ type: 'wa', icon: 'calendar', msg: `ذاكرت <bdi>${activeDays7}d</bdi> فقط هذا الأسبوع — الانتظام أهم من الكم` });
-    if (avgSession > 0 && avgSession < 20) alerts.push({ type: 'wa', icon: 'timer', msg: `متوسط جلساتك <bdi>${avgSession}m</bdi> — جرّب <bdi>25-45m</bdi> للتركيز العميق` });
+    if (avgSession > 0 && avgSession < 20) alerts.push({ type: 'wa', icon: 'timer', msg: `متوسط جلساتك ${formatStudyDuration(avgSession)} — جرّب ${formatStudyDuration(25)} إلى ${formatStudyDuration(45)} للتركيز العميق` });
     if (G.data.streak.count >= 7) alerts.push({ type: 'ok', icon: 'flame', msg: `<bdi><strong>${G.data.streak.count}d</strong></bdi> متتالية! حافظ على هذه السلسلة 🔥` });
     if (allSess.some(s => s.ts) && hourBuckets[peakHour] > 0) alerts.push({ type: 'ok', icon: 'sun', msg: `أفضل أوقاتك هي <strong>${peakLabel}</strong> — خصصها للمواد الصعبة` });
 
@@ -1964,29 +2054,29 @@ function renderInsights() {
 
             <!-- ٤ أرقام رئيسية -->
             <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:18px">
-                <div class="stat-card" style="--accent-color:var(--p)"><span class="stat-icon"><i data-lucide="timer"></i></span><div class="stat-val">${(totalMinAll / 60).toFixed(1)}h</div><div class="stat-label">إجمالي الدراسة</div></div>
+                <div class="stat-card" style="--accent-color:var(--p)"><span class="stat-icon"><i data-lucide="timer"></i></span><div class="stat-val">${formatStudyDuration(totalMinAll)}</div><div class="stat-label">إجمالي الدراسة</div></div>
                 <div class="stat-card" style="--accent-color:var(--wa)"><span class="stat-icon"><i data-lucide="flame"></i></span><div class="stat-val">${G.data.streak.count}</div><div class="stat-label">d متتالية</div></div>
-                <div class="stat-card" style="--accent-color:var(--ac)"><span class="stat-icon"><i data-lucide="zap"></i></span><div class="stat-val">${avgSession}m</div><div class="stat-label">متوسط الجلسة</div></div>
+                <div class="stat-card" style="--accent-color:var(--ac)"><span class="stat-icon"><i data-lucide="zap"></i></span><div class="stat-val">${formatStudyDuration(avgSession)}</div><div class="stat-label">متوسط الجلسة</div></div>
                 <div class="stat-card" style="--accent-color:var(--ok)"><span class="stat-icon"><i data-lucide="star"></i></span><div class="stat-val">${masteredCards}/${totalCards}</div><div class="stat-label">بطاقات محفوظة</div></div>
             </div>
 
             <!-- شارت 7 أيام + انتظام -->
-            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:18px;align-items:start">
-                <div class="card">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:18px;align-items:stretch">
+                <div class="card wide-card">
                     <h3 class="card-title"><i data-lucide="bar-chart-2"></i> دراسة الأسبوع</h3>
-                    <div style="display:flex;align-items:flex-end;gap:6px;height:90px;margin-bottom:8px">
+                    <div class="week-chart">
                         ${last7dates.map((d, i) => {
         const v = byDate7[d] || 0; const pct2 = Math.round((v / maxBar) * 100);
         const day = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][new Date(d).getDay()];
         const isToday2 = d === today(); const h = Math.round(v / 60 * 10) / 10;
-        return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
-                                <div style="font-size:.58rem;color:var(--tm);font-weight:700">${v > 0 ? h + 'h' : ''}</div>
-                                <div style="width:100%;border-radius:4px 4px 0 0;height:${Math.max(pct2, 0) * .7}px;min-height:${v > 0 ? 4 : 0}px;background:${isToday2 ? 'var(--p)' : 'rgba(91,138,255,.55)'};transition:height .4s ease ${i * .05}s"></div>
-                                <div style="font-size:.64rem;color:${isToday2 ? 'var(--p)' : 'var(--tm)'};font-weight:${isToday2 ? 800 : 600}">${day}</div>
+        return `<div class="week-chart-day">
+                                <div class="week-chart-value">${v > 0 ? h + 'h' : ''}</div>
+                                <div class="week-chart-bar" style="height:${Math.max(pct2, 0) * .7}px;min-height:${v > 0 ? 4 : 0}px;background:${isToday2 ? 'var(--p)' : 'rgba(91,138,255,.55)'};transition:height .4s ease ${i * .05}s"></div>
+                                <div class="week-chart-day-label">${day}</div>
                             </div>`;
     }).join('')}
                     </div>
-                    <div style="display:flex;justify-content:space-between;font-size:.72rem;color:var(--tm);padding-top:8px;border-top:1px solid var(--bo)">
+                    <div class="week-summary" style="display:flex;justify-content:space-between;font-size:.72rem;color:var(--tm);padding-top:8px;border-top:1px solid var(--bo)">
                         <span>الأسبوع: <strong style="color:var(--tx)"><bdi>${(totalMin7 / 60).toFixed(1)}h</bdi></strong></span>
                         <span>أيام نشطة: <strong style="color:var(--tx)"><bdi>${activeDays7}d/7</bdi></strong></span>
                     </div>
@@ -2074,7 +2164,7 @@ function handlePomoSubjectChange(newSubId) {
             updateTopbar();
             renderPomoLog();
             const oldName = G.data.subjects.find(s => s.id === oldSubId)?.name || 'دراسة عامة';
-            showToast('✓ حُفظ ' + elapsedMins + 'د لـ' + oldName);
+            showToast('✓ حُفظ ' + formatStudyDuration(elapsedMins) + ' لـ' + oldName);
         }
     }
     // Reset tracking for new subject
@@ -2122,16 +2212,26 @@ window.addEventListener('beforeunload', () => {
 });
 
 // ── INIT
-document.addEventListener('DOMContentLoaded', () => {
+function initAppBootstrap() {
     const savedTheme = localStorage.getItem('df_theme') || 'dark'; G.theme = savedTheme; applyTheme(savedTheme);
     buildAvatarPicker();
 
-    // Auto-login: skip auth screen if user exists
-    if (!tryAutoLogin()) {
-        // Pre-fill name if saved
-        const saved = loadLocal();
-        if (saved && saved.name && saved.name !== 'User') { document.getElementById('entry-name').value = saved.name; }
+    const saved = getSavedUserData();
+    if (saved) {
+        showInitialScreen(true);
+        startApp(saved, false);
+        return;
     }
+
+    showInitialScreen(false);
+    if (saved && saved.name && saved.name !== 'User') {
+        const nameInput = document.getElementById('entry-name');
+        if (nameInput) nameInput.value = saved.name;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    initAppBootstrap();
 
     // Auth: Enter key on name input
     document.getElementById('entry-name')?.addEventListener('keydown', e => {
