@@ -97,6 +97,12 @@
             } catch (e) {
                 document.documentElement.setAttribute('data-boot-state', 'auth');
             }
+            try {
+                if (window.matchMedia('(max-width:768px)').matches ||
+                    window.matchMedia('(hover:none) and (pointer:coarse)').matches) {
+                    document.documentElement.classList.add('df-lite');
+                }
+            } catch (e) { /* ignore */ }
         })();
     </script>
 </head>
