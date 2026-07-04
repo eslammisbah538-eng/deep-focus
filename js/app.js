@@ -1500,7 +1500,7 @@ function showWeeklyWrapped() {
                         <div style="background:var(--s2);border-radius:12px;padding:13px;text-align:center"><div style="display:flex;justify-content:center;margin-bottom:6px;color:var(--ok)"><i data-lucide="zap" style="width:18px;height:18px"></i></div><div style="font-size:1.4rem;font-weight:900;color:var(--tx)">${s.bestDayMin}<span style="font-size:.75rem;color:var(--tm)">h</span></div><div style="font-size:.68rem;color:var(--tm)">أفضل يوم · ${s.bestDayName}</div></div>
                     </div>
                     <div style="background:var(--s2);border-radius:12px;padding:12px;margin-bottom:14px;text-align:right"><div style="font-size:.7rem;color:var(--tm);margin-bottom:8px;display:flex;align-items:center;gap:5px"><i data-lucide="book-open" style="width:13px;height:13px"></i> المادة الأكثر دراسة</div><div style="font-weight:800;font-size:.92rem;color:var(--tx)">${s.topSubName}</div></div>
-                    <div style="display:flex;gap:5px;align-items:flex-end;padding:8px 0">${bars}</div>
+                    <div style="display:flex;gap:5px;align-items:flex-end;padding:8px 0;direction:ltr">${bars}</div>
                 </div>`,
         `<button class="btn-primary" onclick="closeModal()">رائع!</button>`
     );
@@ -1841,11 +1841,11 @@ function buildSubjectProgressRow(s) {
         const goal = getAutoGoal(s);
         if (goal === null) return ''; // مفيش تاريخ امتحان و/أو ساعات هدف محددة — لا أساس لعرض هدف يومي
         if (s.studiedToday >= goal) {
-            return `<span style="font-size:.67rem;font-weight:700;color:var(--ok);background:rgba(16,212,138,.12);padding:2px 8px;border-radius:8px;border:1px solid rgba(16,212,138,.3)">✓ ${formatStudyDuration(s.studiedToday)} / ${formatStudyDuration(goal)}</span>`;
+            return `<span style="font-size:.67rem;font-weight:700;color:var(--ok);background:rgba(16,212,138,.12);padding:2px 8px;border-radius:8px;border:1px solid rgba(16,212,138,.3)">✓ ${formatStudyDuration(s.studiedToday)} <span style="opacity:.6;font-weight:500">من ${formatStudyDuration(goal)}</span></span>`;
         } else if (s.studiedToday > 0) {
-            return `<span style="font-size:.67rem;font-weight:700;color:var(--wa);background:rgba(255,179,71,.1);padding:2px 8px;border-radius:8px;border:1px solid rgba(255,179,71,.25)">⏱ ${formatStudyDuration(s.studiedToday)} / ${formatStudyDuration(goal)}</span>`;
+            return `<span style="font-size:.67rem;font-weight:700;color:var(--wa);background:rgba(255,179,71,.1);padding:2px 8px;border-radius:8px;border:1px solid rgba(255,179,71,.25)">⏱ ${formatStudyDuration(s.studiedToday)} <span style="opacity:.6;font-weight:500">من ${formatStudyDuration(goal)}</span></span>`;
         } else {
-            return `<span style="font-size:.67rem;font-weight:600;color:var(--td);background:var(--s3);padding:2px 8px;border-radius:8px">○ 0 / ${formatStudyDuration(goal)}</span>`;
+            return `<span style="font-size:.67rem;font-weight:600;color:var(--td);background:var(--s3);padding:2px 8px;border-radius:8px">○ 0 <span style="opacity:.6">من ${formatStudyDuration(goal)}</span></span>`;
         }
     })();
     const cardsBadge = s.subCards > 0
@@ -2028,7 +2028,7 @@ function renderInsights() {
             <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:18px;align-items:stretch">
                 <div class="card wide-card">
                     <h3 class="card-title"><i data-lucide="bar-chart-2"></i> دراسة الأسبوع</h3>
-                    <div class="week-chart">
+                    <div class="week-chart" style="direction:ltr">
                         ${last7dates.map((d, i) => {
         const v = byDate7[d] || 0; const pct2 = Math.round((v / maxBar) * 100);
         const day = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][new Date(d).getDay()];
