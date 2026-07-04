@@ -3375,145 +3375,65 @@ a {
 }
 
 /* ══════════════════════════════
-   MOBILE GPU-SAFE RENDERING (df-lite)
-   Fixes horizontal stripe corruption on weak/mobile GPUs during scroll.
-   Root cause: too many forced compositor layers (translateZ / will-change)
-   plus decorative pseudo-elements and infinite animations overloading VRAM.
+   WEBVIEW / IN-APP BROWSER FIX
+   Fixes glitch in WhatsApp, Telegram, Instagram WebViews
 ══════════════════════════════ */
 
-html.df-lite {
-    scroll-behavior: auto
+/* Force GPU layer on key containers to prevent composite glitches */
+/* NOTE: #app and #main intentionally excluded — transforms on ancestors
+           break position:fixed for #bottom-nav (CSS containing-block rule) */
+#content,
+#sidebar,
+.card,
+.stat-card,
+.sound-card,
+.subject-card {
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden
 }
 
-html.df-lite #content {
-    -webkit-overflow-scrolling: auto;
-    overscroll-behavior: contain
-}
-
-html.df-lite #content,
-html.df-lite #sidebar,
-html.df-lite .card,
-html.df-lite .stat-card,
-html.df-lite .sound-card,
-html.df-lite .subject-card,
-html.df-lite .form-card,
-html.df-lite #topbar,
-html.df-lite .fc-card,
-html.df-lite .ambient-hero,
-html.df-lite .exam-countdown-card {
-    -webkit-transform: none !important;
-    transform: none !important;
-    -webkit-backface-visibility: visible !important;
-    backface-visibility: visible !important;
-    will-change: auto !important
-}
-
-html.df-lite .stat-card::after,
-html.df-lite .exam-countdown-card::after {
-    display: none
-}
-
-html.df-lite .stat-card,
-html.df-lite .exam-countdown-card {
-    overflow: visible
-}
-
-html.df-lite .card,
-html.df-lite .stat-card,
-html.df-lite .form-card,
-html.df-lite .exam-countdown-card,
-html.df-lite .subject-card,
-html.df-lite .sound-card {
-    box-shadow: none
-}
-
-html.df-lite .auth-card,
-html.df-lite .modal-overlay,
-html.df-lite .onboarding-card,
-html.df-lite .onboarding-spotlight,
-html.df-lite #tour-spotlight {
-    -webkit-backdrop-filter: none !important;
-    backdrop-filter: none !important
-}
-
-html.df-lite .auth-card,
-html.df-lite .onboarding-card {
-    background: var(--s) !important
-}
-
-html.df-lite #auth-screen::before,
-html.df-lite .auth-grid-bg {
-    display: none
-}
-
-html.df-lite .ecc-today-flash,
-html.df-lite .anp-bar,
-html.df-lite .ai-typing span,
-html.df-lite .countdown-today .countdown-text,
-html.df-lite .onboarding-spotlight,
-html.df-lite .tour-pulse-ring,
-html.df-lite #tour-spotlight {
-    animation: none !important
-}
-
-html.df-lite .countdown-today .countdown-text {
-    -webkit-background-clip: unset;
-    background-clip: unset;
-    -webkit-text-fill-color: var(--er);
-    color: var(--er) !important
-}
-
-html.df-lite .fc-card-wrap {
-    perspective: none !important
-}
-
-html.df-lite .fc-card {
-    -webkit-transform-style: flat !important;
-    transform-style: flat !important;
-    transition: none !important
-}
-
-html.df-lite .fc-card.flipped {
-    -webkit-transform: none !important;
-    transform: none !important
-}
-
-html.df-lite .fc-front,
-html.df-lite .fc-back {
-    -webkit-backface-visibility: visible !important;
-    backface-visibility: visible !important
-}
-
-html.df-lite .fc-back {
-    display: none;
-    -webkit-transform: none !important;
-    transform: none !important
-}
-
-html.df-lite .fc-card.flipped .fc-front {
-    display: none
-}
-
-html.df-lite .fc-card.flipped .fc-back {
-    display: flex
-}
-
-html.df-lite .confetti-particle {
-    will-change: auto !important
-}
-
-/* Bottom nav: keep above scroll content without promoting scroll children */
+/* Bottom nav: force above any stacking context, never moves with scroll */
 #bottom-nav {
-    isolation: isolate
+    will-change: auto;
+    isolation: isolate;
 }
 
 #bnav-more-sheet {
-    isolation: isolate
+    isolation: isolate;
 }
 
+/* Prevent subpixel rendering issues on Android WebView */
 body {
     -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility
+}
+
+/* Disable all backdrop-filter on devices that render it incorrectly */
+@supports not (backdrop-filter: blur(1px)) {
+
+    .auth-card,
+    .modal-overlay {
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important
+    }
+
+    .auth-card {
+        background: var(--s) !important
+    }
+}
+
+/* Fix for auth screen background radial gradients causing glitch on some WebViews */
+@media(max-width:768px) {
+    #auth-screen::before {
+        display: none
+    }
+
+    .auth-grid-bg {
+        display: none
+    }
 }
 
 /* ══════════════════════════════
@@ -4078,6 +3998,32 @@ body.light .onboarding-card {
     animation: confettiFall 2s linear forwards;
     will-change: transform, opacity;
 }
+
+/* Mobile render fixes: mitigate horizontal/composite glitches on some devices */
+@media (max-width: 768px) {
+    .card,
+    .form-card,
+    .stat-card,
+    .sound-card,
+    #topbar,
+    #content,
+    .subject-card,
+    .fc-card,
+    .ambient-hero {
+        -webkit-transform: translateZ(0);
+        transform: translateZ(0);
+        -webkit-backface-visibility: hidden;
+        backface-visibility: hidden;
+        will-change: transform, opacity;
+    }
+
+    /* lightweight class toggled from JS to force a short repaint when needed */
+    .df-repaint-hack {
+        -webkit-transform: translateZ(0) !important;
+        transform: translateZ(0) !important;
+    }
+}
+
 
 @keyframes confettiFall {
     0% {
