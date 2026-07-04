@@ -61,6 +61,15 @@ function formatStudyDuration(minutes) {
     if (mins === 0) return `${hours} ${hours === 1 ? 'ساعة' : 'ساعات'}`;
     return `${hours} ${hours === 1 ? 'ساعة' : 'ساعات'} و${mins} ${mins === 1 ? 'دقيقة' : 'دقائق'}`;
 }
+// نسخة HTML مع <bdi> tags لعرض صحيح في الواجهات RTL
+function formatStudyDurationHTML(minutes) {
+    const total = Math.max(0, Math.round(Number(minutes) || 0));
+    if (total < 60) return `<bdi>${total}</bdi> دقيقة`;
+    const hours = Math.floor(total / 60);
+    const mins = total % 60;
+    if (mins === 0) return `<bdi>${hours}</bdi> ${hours === 1 ? 'ساعة' : 'ساعات'}`;
+    return `<bdi>${hours}</bdi> ${hours === 1 ? 'ساعة' : 'ساعات'} و<bdi>${mins}</bdi> ${mins === 1 ? 'دقيقة' : 'دقائق'}`;
+}
 function daysUntil(d) { if (!d) return null; return Math.ceil((new Date(d).setHours(0, 0, 0, 0) - new Date().setHours(0, 0, 0, 0)) / 86400000); }
 function getPriority(d) { const n = daysUntil(d); if (n === null) return 'low'; if (n < 0) return 'done'; if (n <= 3) return 'critical'; if (n <= 7) return 'high'; if (n <= 14) return 'medium'; return 'low'; }
 
@@ -222,7 +231,7 @@ function injectDeleteAccountButton(referenceBtnId, newId) {
 function updateTopbar() {
     const totalMin = (G.data.sessions || []).filter(s => s.type === 'pomo').reduce((a, s) => a + (s.duration || 0), 0);
     const el = document.getElementById('total-hours-val');
-    if (el) el.textContent = formatStudyDuration(totalMin);
+    if (el) el.innerHTML = formatStudyDurationHTML(totalMin);
 }
 function updateStreak() {
     const t = today();
@@ -2250,4 +2259,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
     updatePomoUI(); exitReview();
     lucide.createIcons();
-});
+}); 
