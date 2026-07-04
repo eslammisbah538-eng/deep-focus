@@ -2057,7 +2057,7 @@ function renderInsights() {
                         </div>
                     </div>
                     <div style="font-size:.76rem;font-weight:800;color:${consistencyColor}">${consistencyLabel}</div>
-                    <div style="font-size:.66rem;color:var(--tm);margin-top:2px"><bdi>${activeDays30}d</bdi> من 30</div>
+                    <div style="font-size:.66rem;color:var(--tm);margin-top:2px"><bdi>${activeDays30}d</bdi> من <bdi>${consistencyWindow}</bdi></div>
                     <div style="margin-top:8px;padding-top:7px;border-top:1px solid var(--bo);display:flex;flex-direction:column;gap:3px">
                         <div style="font-size:.66rem;color:var(--tm)"> أفضل وقت: <strong style="color:var(--p)">${allSess.some(s => s.ts) ? peakLabel : '—'}</strong></div>
                         <div style="font-size:.66rem;color:var(--tm)"> أفضل يوم: <strong style="color:var(--p)">${allSess.length > 0 ? dayNames[bestDayIdx] : '—'}</strong></div>
