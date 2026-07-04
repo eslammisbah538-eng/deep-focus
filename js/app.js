@@ -55,12 +55,11 @@ function ltrDt(n) { return n + 'd'; } // نسخة نص فقط (للـ toast وا
 function today() { return new Date().toISOString().slice(0, 10); }
 function formatStudyDuration(minutes) {
     const total = Math.max(0, Math.round(Number(minutes) || 0));
-    const LTR = '\u200E'; // Left-to-Right Mark لضمان الترتيب الصحيح في RTL
-    if (total < 60) return `${total}${LTR} دقيقة`;
+    if (total < 60) return `${total}m`;
     const hours = Math.floor(total / 60);
     const mins = total % 60;
-    if (mins === 0) return `${hours}${LTR} ${hours === 1 ? 'ساعة' : 'ساعات'}`;
-    return `${hours}${LTR} ${hours === 1 ? 'ساعة' : 'ساعات'} و${mins}${LTR} ${mins === 1 ? 'دقيقة' : 'دقائق'}`;
+    if (mins === 0) return `${hours}h`;
+    return `${hours}h ${mins}m`;
 }
 
 function daysUntil(d) { if (!d) return null; return Math.ceil((new Date(d).setHours(0, 0, 0, 0) - new Date().setHours(0, 0, 0, 0)) / 86400000); }
