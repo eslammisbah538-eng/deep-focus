@@ -1857,7 +1857,7 @@ function buildSubjectProgressRow(s) {
                     <div style="width:10px;height:10px;border-radius:50%;background:${subColor};flex-shrink:0"></div>
                     <span style="font-weight:800;font-size:.87rem;flex:1">${s.name}</span>
                     <span style="font-size:.69rem;font-weight:700;color:${urgColor};background:${urgColor}22;padding:2px 7px;border-radius:10px">${examTxt}</span>
-                    <span style="font-size:.69rem;color:var(--tm)">${studiedH}h${targetH ? ' / ' + targetH + 'h' : ''}</span>
+                    <span style="font-size:.69rem;color:var(--tm)"><span style="color:${subColor};font-weight:800">${studiedH}h</span>${targetH ? ` <span style="opacity:.6">من</span> ${targetH}h` : ''}</span>
                     ${hint}
                 </div>
                 ${s.pct !== null ? `
@@ -1869,7 +1869,7 @@ function buildSubjectProgressRow(s) {
                     // عشان العلامة تبان فعلياً فين كنت قبل النهاردة وتوضح مساهمة اليوم
                     const studiedBeforeToday = Math.max(0, s.studied - s.studiedToday);
                     const markerPct = Math.max(0, Math.min(s.pct, Math.round((studiedBeforeToday / s.target) * 100)));
-                    return `<div title="وصلت لهنا قبل اليوم" style="position:absolute;top:-3px;left:${markerPct}%;transform:translateX(-50%);width:2px;height:10px;background:${subColor};border-radius:2px;box-shadow:0 0 4px ${subColor}88"></div>`;
+                    return `<div title="وصلت لهنا قبل اليوم" style="position:absolute;top:-3px;right:${markerPct}%;transform:translateX(50%);width:2px;height:10px;background:${subColor};border-radius:2px;box-shadow:0 0 4px ${subColor}88"></div>`;
                 }
                 return '';
             })()}
@@ -1964,7 +1964,11 @@ function renderInsights() {
     const bestDayIdx = dayBuckets.indexOf(Math.max(...dayBuckets));
     const dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 
-    const consistency30 = Math.round((activeDays30 / 30) * 100);
+    // نافذة الانتظام: 30 يوم كحد أقصى، أو عدد الأيام الفعلي من أول جلسة مذاكرة لو المستخدم جديد (تفادي ظلمه بالقسمة على 30 وهو لسه بادئ)
+    const firstSessDate = allSess.reduce((min, s) => (s.date && (!min || s.date < min)) ? s.date : min, null);
+    const daysSinceFirst = firstSessDate ? Math.floor((new Date(today()) - new Date(firstSessDate)) / 86400000) + 1 : 30;
+    const consistencyWindow = Math.min(30, Math.max(1, daysSinceFirst));
+    const consistency30 = Math.round((activeDays30 / consistencyWindow) * 100);
     const consistencyLabel = consistency30 >= 80 ? 'منتظم جداً' : consistency30 >= 50 ? 'منتظم' : consistency30 >= 30 ? 'متقطع' : 'غير منتظم';
     const consistencyColor = consistency30 >= 80 ? 'var(--ok)' : consistency30 >= 50 ? 'var(--p)' : consistency30 >= 30 ? 'var(--wa)' : 'var(--er)';
 
