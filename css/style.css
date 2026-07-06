@@ -35,26 +35,26 @@ body.dark {
 }
 
 body.light {
-    --bg: #f0f4ff;
+    --bg: #eef0f4;
     --s: #ffffff;
-    --s2: #f5f8ff;
-    --s3: #edf1fb;
-    --bo: rgba(0, 0, 0, .08);
-    --bo2: rgba(0, 0, 0, .15);
-    --tx: #0f1a33;
-    --tm: #4a5a80;
-    --td: #aab5cc;
-    --p: #3a66e0;
-    --pd: #2a50c0;
-    --pg: rgba(58, 102, 224, .1);
-    --pgs: rgba(58, 102, 224, .05);
-    --ac: #00a88a;
-    --ok: #00956a;
-    --wa: #d98000;
-    --er: #e03030;
-    --sh: 0 2px 12px rgba(0, 0, 0, .08);
-    --shl: 0 6px 30px rgba(0, 0, 0, .13);
-    --glass: rgba(255, 255, 255, .8)
+    --s2: #f6f7f9;
+    --s3: #eef0f4;
+    --bo: rgba(15, 23, 42, .1);
+    --bo2: rgba(15, 23, 42, .16);
+    --tx: #1e2433;
+    --tm: #64748b;
+    --td: #c3cad6;
+    --p: #3d5fd9;
+    --pd: #2f4bb0;
+    --pg: rgba(61, 95, 217, .08);
+    --pgs: rgba(61, 95, 217, .04);
+    --ac: #0f9d80;
+    --ok: #0a8f66;
+    --wa: #c17a00;
+    --er: #d13b3b;
+    --sh: 0 1px 3px rgba(15, 23, 42, .08), 0 1px 2px rgba(15, 23, 42, .06);
+    --shl: 0 10px 28px rgba(15, 23, 42, .12), 0 2px 8px rgba(15, 23, 42, .06);
+    --glass: rgba(255, 255, 255, .85)
 }
 
 *,
@@ -1328,13 +1328,14 @@ a {
 }
 
 .ecc-unit {
-    background: var(--s2);
-    border: 1px solid var(--bo);
+    background: var(--s);
+    border: 1px solid var(--bo2);
     border-radius: 10px;
     padding: 8px 10px;
     text-align: center;
     min-width: 52px;
-    flex: 1
+    flex: 1;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, .04)
 }
 
 .ecc-unit-val {
@@ -2832,18 +2833,18 @@ a {
 
 /* ── ABOUT ── */
 .about-wrap {
-    max-width: 620px;
+    max-width: 880px;
     margin: 0 auto;
-    padding: 4px 0
+    padding: 4px 0 32px
 }
 
 .about-hero {
     background: var(--s);
     border: 1px solid var(--bo);
     border-radius: var(--rl);
-    padding: 36px 26px 28px;
+    padding: 44px 32px 34px;
     text-align: center;
-    margin-bottom: 16px;
+    margin-bottom: 20px;
     box-shadow: var(--sh);
     position: relative;
     overflow: hidden
@@ -2934,22 +2935,24 @@ a {
 
 .about-cards {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-    gap: 10px;
-    margin-bottom: 16px
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 14px;
+    margin-bottom: 20px
 }
 
 .about-card {
     background: var(--s);
     border: 1px solid var(--bo);
     border-radius: var(--r);
-    padding: 18px 12px;
+    padding: 24px 14px;
     text-align: center;
-    box-shadow: var(--sh)
+    box-shadow: var(--sh);
+    transition: transform var(--t), box-shadow var(--t)
 }
 
 .about-card:hover {
-    transform: translateY(-3px)
+    transform: translateY(-3px);
+    box-shadow: var(--shl)
 }
 
 .about-card-icon {
@@ -2980,13 +2983,84 @@ a {
 
 .about-footer-bar {
     text-align: center;
-    padding: 16px;
+    padding: 18px;
     background: var(--s);
     border: 1px solid var(--bo);
     border-radius: var(--r);
     font-size: .78rem;
     color: var(--tm);
     box-shadow: var(--sh)
+}
+
+/* Scale the whole "about" page up on larger screens so it fills the
+   content area instead of floating as a narrow column */
+@media(min-width:1100px) {
+    .about-wrap {
+        max-width: 1040px
+    }
+
+    .about-hero {
+        padding: 60px 64px 48px
+    }
+
+    .about-name {
+        font-size: 2.15rem
+    }
+
+    .about-role {
+        font-size: .8rem;
+        padding: 6px 18px;
+        margin-bottom: 20px
+    }
+
+    .about-bio {
+        font-size: .98rem;
+        line-height: 1.85;
+        max-width: 580px;
+        margin-bottom: 26px
+    }
+
+    .about-skills {
+        gap: 8px;
+        margin-bottom: 28px
+    }
+
+    .about-skill {
+        font-size: .8rem;
+        padding: 6px 16px
+    }
+
+    .about-linkedin {
+        padding: 12px 28px;
+        font-size: .92rem
+    }
+
+    .about-cards {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 18px
+    }
+
+    .about-card {
+        padding: 30px 16px
+    }
+
+    .about-card-icon svg {
+        width: 30px;
+        height: 30px
+    }
+
+    .about-card-val {
+        font-size: 1.15rem
+    }
+
+    .about-card-lbl {
+        font-size: .78rem
+    }
+
+    .about-footer-bar {
+        padding: 22px;
+        font-size: .85rem
+    }
 }
 
 /* ── MODAL ── */
@@ -3336,6 +3410,65 @@ a {
         animation: none !important;
         height: 10px !important
     }
+
+
+    /* --- merged from: auth screen radial-gradient WebView fix --- */
+
+    #auth-screen::before {
+        display: none
+    }
+
+    .auth-grid-bg {
+        display: none
+    }
+
+
+    /* --- merged from: mobile render / GPU-layer fix --- */
+
+
+    .form-card,
+    #topbar,
+    .fc-card,
+    .ambient-hero {
+        -webkit-transform: translateZ(0);
+        transform: translateZ(0);
+        -webkit-backface-visibility: hidden;
+        backface-visibility: hidden
+    }
+
+    /* lightweight class toggled from JS to force a short repaint when needed */
+    .df-repaint-hack {
+        -webkit-transform: translateZ(0) !important;
+        transform: translateZ(0) !important;
+    }
+
+    /* Opt-in GPU boost: add this class from JS right before starting a transform/opacity
+       animation on one of the elements above, and remove it again on animationend/
+       transitionend. Do NOT leave will-change on permanently — it keeps a compositing
+       layer allocated for the element's entire lifetime, which is the main cause of
+       layer buildup and jank on low-end phones. */
+    .gpu-boost {
+        will-change: transform, opacity;
+    }
+
+
+    /* --- merged from: onboarding card mobile sizing --- */
+
+    .onboarding-card {
+        max-width: min(280px, 85vw);
+    }
+
+    .onboarding-overlay.end-mode .onboarding-card {
+        max-width: min(380px, 90vw);
+    }
+
+    .onboarding-card-header h3 {
+        font-size: .9rem;
+    }
+
+    #onboarding-desc {
+        font-size: .75rem;
+    }
 }
 
 @media(max-width:480px) {
@@ -3426,353 +3559,7 @@ body {
 }
 
 /* Fix for auth screen background radial gradients causing glitch on some WebViews */
-@media(max-width:768px) {
-    #auth-screen::before {
-        display: none
-    }
 
-    .auth-grid-bg {
-        display: none
-    }
-}
-
-/* ══════════════════════════════
-   ONBOARDING TOUR
-══════════════════════════════ */
-#tour-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 9000;
-    pointer-events: none
-}
-
-#tour-backdrop {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, .72);
-    z-index: 9001;
-    pointer-events: all;
-    transition: opacity .35s ease
-}
-
-/* Spotlight hole: punched out via clip-path */
-#tour-spotlight {
-    position: fixed;
-    z-index: 9002;
-    border-radius: 14px;
-    box-shadow: 0 0 0 9999px rgba(0, 0, 0, .72), 0 0 0 3px var(--p), 0 0 32px rgba(91, 138, 255, .5);
-    transition: all .4s cubic-bezier(.4, 0, .2, 1);
-    pointer-events: none
-}
-
-#tour-card {
-    position: fixed;
-    z-index: 9003;
-    background: var(--s);
-    border: 1px solid var(--bo2);
-    border-radius: 18px;
-    padding: 20px 22px 16px;
-    width: min(320px, 88vw);
-    box-shadow: 0 12px 48px rgba(0, 0, 0, .55), inset 0 1px 0 rgba(255, 255, 255, .08);
-    pointer-events: all;
-    transition: all .4s cubic-bezier(.4, 0, .2, 1);
-    animation: tourCardIn .35s cubic-bezier(.4, 0, .2, 1)
-}
-
-@keyframes tourCardIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px) scale(.97)
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1)
-    }
-}
-
-.tour-step-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    background: var(--pg);
-    border: 1px solid var(--p);
-    color: var(--p);
-    font-size: .68rem;
-    font-weight: 800;
-    padding: 3px 10px;
-    border-radius: 20px;
-    margin-bottom: 10px;
-    letter-spacing: .04em
-}
-
-.tour-step-badge svg {
-    width: 11px;
-    height: 11px
-}
-
-.tour-title {
-    font-family: var(--f-h);
-    font-size: 1rem;
-    font-weight: 900;
-    color: var(--tx);
-    margin-bottom: 6px;
-    display: flex;
-    align-items: center;
-    gap: 8px
-}
-
-.tour-title-icon {
-    width: 30px;
-    height: 30px;
-    border-radius: 9px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0
-}
-
-.tour-title-icon svg {
-    width: 16px;
-    height: 16px;
-    color: #fff
-}
-
-.tour-desc {
-    font-size: .83rem;
-    color: var(--tm);
-    line-height: 1.65;
-    margin-bottom: 14px
-}
-
-.tour-tip {
-    display: flex;
-    align-items: flex-start;
-    gap: 7px;
-    background: var(--pgs);
-    border: 1px solid var(--pg);
-    border-radius: var(--rs);
-    padding: 8px 10px;
-    margin-bottom: 14px;
-    font-size: .76rem;
-    color: var(--tm);
-    line-height: 1.5
-}
-
-.tour-tip svg {
-    width: 13px;
-    height: 13px;
-    color: var(--p);
-    flex-shrink: 0;
-    margin-top: 1px
-}
-
-.tour-footer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px
-}
-
-.tour-dots {
-    display: flex;
-    gap: 4px;
-    align-items: center
-}
-
-.tour-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--s3);
-    transition: all .25s
-}
-
-.tour-dot.active {
-    background: var(--p);
-    width: 18px;
-    border-radius: 3px
-}
-
-.tour-dot.done {
-    background: var(--ok)
-}
-
-.tour-actions {
-    display: flex;
-    gap: 6px
-}
-
-.tour-skip-btn {
-    background: none;
-    border: 1px solid var(--bo);
-    color: var(--td);
-    padding: 7px 12px;
-    border-radius: var(--rs);
-    font-size: .76rem;
-    font-weight: 700;
-    cursor: pointer;
-    font-family: var(--f-b);
-    transition: all .2s
-}
-
-.tour-skip-btn:hover {
-    border-color: var(--er);
-    color: var(--er)
-}
-
-.tour-next-btn {
-    background: linear-gradient(135deg, var(--p), var(--pd));
-    color: #fff;
-    border: none;
-    padding: 8px 18px;
-    border-radius: var(--rs);
-    font-size: .82rem;
-    font-weight: 800;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-family: var(--f-b);
-    box-shadow: 0 3px 12px rgba(91, 138, 255, .35);
-    transition: all .2s
-}
-
-.tour-next-btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 6px 18px rgba(91, 138, 255, .45)
-}
-
-.tour-next-btn svg {
-    width: 14px;
-    height: 14px
-}
-
-/* Arrow pointer */
-#tour-arrow {
-    position: fixed;
-    z-index: 9004;
-    width: 0;
-    height: 0;
-    pointer-events: none;
-    transition: all .4s cubic-bezier(.4, 0, .2, 1)
-}
-
-#tour-arrow.up {
-    border-left: 9px solid transparent;
-    border-right: 9px solid transparent;
-    border-bottom: 11px solid var(--s)
-}
-
-#tour-arrow.down {
-    border-left: 9px solid transparent;
-    border-right: 9px solid transparent;
-    border-top: 11px solid var(--s)
-}
-
-#tour-arrow.right {
-    border-top: 9px solid transparent;
-    border-bottom: 9px solid transparent;
-    border-left: 11px solid var(--s)
-}
-
-#tour-arrow.left {
-    border-top: 9px solid transparent;
-    border-bottom: 9px solid transparent;
-    border-right: 11px solid var(--s)
-}
-
-/* Pulse ring on highlighted element */
-.tour-pulse-ring {
-    position: fixed;
-    z-index: 9002;
-    border-radius: 14px;
-    border: 2px solid var(--p);
-    animation: tourPulse 1.6s ease-in-out infinite;
-    pointer-events: none
-}
-
-@keyframes tourPulse {
-    0% {
-        opacity: .7;
-        transform: scale(1)
-    }
-
-    50% {
-        opacity: .25;
-        transform: scale(1.04)
-    }
-
-    100% {
-        opacity: .7;
-        transform: scale(1)
-    }
-}
-
-/* Finish celebration */
-#tour-finish {
-    position: fixed;
-    inset: 0;
-    z-index: 9010;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(0, 0, 0, .78);
-    animation: fadeIn .3s ease
-}
-
-.tour-finish-card {
-    background: var(--s);
-    border: 1px solid var(--bo2);
-    border-radius: 24px;
-    padding: 36px 32px 28px;
-    width: min(360px, 90vw);
-    text-align: center;
-    box-shadow: 0 16px 64px rgba(0, 0, 0, .6);
-    animation: slideUp .35s ease
-}
-
-.tour-finish-icon {
-    font-size: 3rem;
-    margin-bottom: 12px;
-    display: flex;
-    justify-content: center
-}
-
-.tour-finish-card h2 {
-    font-size: 1.4rem;
-    font-weight: 900;
-    margin-bottom: 8px
-}
-
-.tour-finish-card p {
-    font-size: .86rem;
-    color: var(--tm);
-    margin-bottom: 22px;
-    line-height: 1.65
-}
-
-.confetti-dot {
-    position: fixed;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    pointer-events: none;
-    z-index: 9020;
-    animation: confettiFall linear forwards
-}
-
-@keyframes confettiFall {
-    0% {
-        transform: translateY(-20px) rotate(0deg);
-        opacity: 1
-    }
-
-    100% {
-        transform: translateY(100vh) rotate(720deg);
-        opacity: 0
-    }
-}
 
 /* ── ONBOARDING SYSTEM ── */
 .onboarding-overlay {
@@ -3795,22 +3582,35 @@ body {
     left: 0;
     border: 3px solid var(--p);
     border-radius: var(--r);
+    /* Static dim mask — this box-shadow never changes/animates, so the browser
+       paints the full-screen dim layer once instead of every animation frame */
     box-shadow: 0 0 0 9999px rgba(0, 0, 0, .75);
-    animation: spotlightPulse 2s ease-in-out infinite;
     pointer-events: none;
     z-index: 9001;
     transition: all .4s ease;
+}
+
+/* Pulsing glow lives on its own small pseudo-element so only opacity animates
+   (cheap, compositor-only) instead of re-painting the 9999px dim mask every frame */
+.onboarding-spotlight::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow: 0 0 28px rgba(91, 138, 255, .45);
+    animation: spotlightPulse 2s ease-in-out infinite;
+    pointer-events: none;
 }
 
 @keyframes spotlightPulse {
 
     0%,
     100% {
-        box-shadow: 0 0 0 9999px rgba(0, 0, 0, .75), 0 0 20px rgba(91, 138, 255, .3);
+        opacity: .4;
     }
 
     50% {
-        box-shadow: 0 0 0 9999px rgba(0, 0, 0, .75), 0 0 35px rgba(91, 138, 255, .6);
+        opacity: 1;
     }
 }
 
@@ -3999,33 +3799,6 @@ body.light .onboarding-card {
     will-change: transform, opacity;
 }
 
-/* Mobile render fixes: mitigate horizontal/composite glitches on some devices */
-@media (max-width: 768px) {
-
-    .card,
-    .form-card,
-    .stat-card,
-    .sound-card,
-    #topbar,
-    #content,
-    .subject-card,
-    .fc-card,
-    .ambient-hero {
-        -webkit-transform: translateZ(0);
-        transform: translateZ(0);
-        -webkit-backface-visibility: hidden;
-        backface-visibility: hidden;
-        will-change: transform, opacity;
-    }
-
-    /* lightweight class toggled from JS to force a short repaint when needed */
-    .df-repaint-hack {
-        -webkit-transform: translateZ(0) !important;
-        transform: translateZ(0) !important;
-    }
-}
-
-
 @keyframes confettiFall {
     0% {
         transform: translateY(0) rotate(0deg);
@@ -4038,21 +3811,20 @@ body.light .onboarding-card {
     }
 }
 
-/* ── MOBILE RESPONSIVE ── */
-@media (max-width: 768px) {
-    .onboarding-card {
-        max-width: min(280px, 85vw);
-    }
 
-    .onboarding-overlay.end-mode .onboarding-card {
-        max-width: min(380px, 90vw);
-    }
+/* ── ACCESSIBILITY: RESPECT REDUCED MOTION ── */
+/* If the user's OS has "reduce motion" turned on, kill all the infinite/looping
+   animations (and shorten the rest) instead of forcing them to keep running.
+   This also helps low-end phones since these are the animations that repaint
+   or composite continuously in the background. */
+@media (prefers-reduced-motion: reduce) {
 
-    .onboarding-card-header h3 {
-        font-size: .9rem;
-    }
-
-    #onboarding-desc {
-        font-size: .75rem;
+    *,
+    *::before,
+    *::after {
+        animation-duration: .001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .001ms !important;
+        scroll-behavior: auto !important;
     }
 }
