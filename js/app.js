@@ -52,7 +52,18 @@ function uid() { return '_' + (Date.now() + Math.random()).toString(36).replace(
 // لف الرقم + الوحدة في LTR حتى لا يتفرق في النصوص العربية
 function ltrD(n) { return `<bdi>${n}d</bdi>`; }
 function ltrDt(n) { return n + 'd'; } // نسخة نص فقط (للـ toast والـ system prompt)
-function today() { return new Date().toISOString().slice(0, 10); }
+// بيرجع تاريخ "اليوم" بتوقيت الجهاز المحلي (مش UTC) — عشان الجلسات والـ streak
+// متتسجلش بيوم غلط في الفترة بين نص الليل ومنتصف الليل UTC
+function toLocalDateStr(d = new Date()) {
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+// بيحوّل تاريخ نصي "YYYY-MM-DD" (زي قيمة input type=date) لتاريخ محلي مباشرة
+// بدل new Date(string) اللي بتفسّره كـ UTC ممكن تزيح اليوم في مناطق زمنية غير مصر
+function parseLocalDate(str) {
+    const [y, m, d] = str.split('-').map(Number);
+    return new Date(y, m - 1, d);
+}
+function today() { return toLocalDateStr(new Date()); }
 // أسبوع ثابت يبدأ السبت وينتهي الجمعة (Sat → Fri) — مش آخر 7 أيام متحركة
 // بيرجع 7 تواريخ بالترتيب الزمني: [السبت, الأحد, الاتنين, الثلاثاء, الأربع, الخميس, الجمعة]
 function getFixedWeekDates() {
@@ -63,7 +74,7 @@ function getFixedWeekDates() {
     for (let i = 0; i < 7; i++) {
         const d = new Date(now);
         d.setDate(now.getDate() - diffFromSat + i);
-        dates.push(d.toISOString().slice(0, 10));
+        dates.push(toLocalDateStr(d));
     }
     return dates;
 }
@@ -76,7 +87,7 @@ function formatStudyDuration(minutes) {
     return `${hours}h ${mins}m`;
 }
 
-function daysUntil(d) { if (!d) return null; return Math.ceil((new Date(d).setHours(0, 0, 0, 0) - new Date().setHours(0, 0, 0, 0)) / 86400000); }
+function daysUntil(d) { if (!d) return null; return Math.ceil((parseLocalDate(d).setHours(0, 0, 0, 0) - new Date().setHours(0, 0, 0, 0)) / 86400000); }
 function getPriority(d) { const n = daysUntil(d); if (n === null) return 'low'; if (n < 0) return 'done'; if (n <= 3) return 'critical'; if (n <= 7) return 'high'; if (n <= 14) return 'medium'; return 'low'; }
 
 // ── AVATAR PICKER
@@ -245,7 +256,7 @@ function updateStreak() {
     const studiedToday = (G.data.sessions || []).some(s => s.date === t && s.type === 'pomo');
     if (!studiedToday) return; // فتح التطبيق بدون مذاكرة ما يعدش streak
     if (G.data.streak.lastDate === t) return; // نفس اليوم، مزودش تاني
-    const y = new Date(); y.setDate(y.getDate() - 1); const ys = y.toISOString().slice(0, 10);
+    const y = new Date(); y.setDate(y.getDate() - 1); const ys = toLocalDateStr(y);
     if (G.data.streak.lastDate === ys) G.data.streak.count++; else G.data.streak.count = 1;
     G.data.streak.lastDate = t; saveData();
 }
@@ -370,8 +381,7 @@ function buildECCHtml(s, ms, allSubs) {
         unitsHtml = `<div class="ecc-done">✓ انتهى الامتحان — أحسنت!</div>`;
     } else if (ms !== null) {
         const totalSecs = Math.max(0, Math.floor(ms / 1000));
-        // استخدم daysUntil بنفس طريقة قسم التقدم لتوحيد الأرقام
-        const d = dLeft > 0 ? dLeft : Math.floor(totalSecs / 86400);
+        const d = Math.floor(totalSecs / 86400);
         const h = Math.floor((totalSecs % 86400) / 3600);
         const m = Math.floor((totalSecs % 3600) / 60);
         const sec = totalSecs % 60;
@@ -394,7 +404,7 @@ function buildECCHtml(s, ms, allSubs) {
 
     const dotsHtml = allSubs.length > 1 ? `<div class="ecc-nav-dots">${allSubs.map((_, i) => `<div class="ecc-nav-dot${i === eccState.idx ? ' active' : ''}" style="${i === eccState.idx ? `--ecc-color:${s.color || 'var(--p)'}` : ''}" onclick="eccGoTo(${i})"></div>`).join('')}</div>` : '';
 
-    const examDateLabel = s.examDate ? new Date(s.examDate).toLocaleDateString('ar-EG', { weekday: 'short', month: 'short', day: 'numeric' }) + (s.examTime ? ' — ' + formatTimeArabic(s.examTime) : '') : '';
+    const examDateLabel = s.examDate ? parseLocalDate(s.examDate).toLocaleDateString('ar-EG', { weekday: 'short', month: 'short', day: 'numeric' }) + (s.examTime ? ' — ' + formatTimeArabic(s.examTime) : '') : '';
 
     return `<div class="exam-countdown-card" style="--ecc-color:${color};margin-bottom:14px">
                 <div class="ecc-label"><i data-lucide="calendar-clock"></i> أقرب امتحان</div>
@@ -489,7 +499,7 @@ function getExamMsLeft(subject) {
     if (!subject.examDate) return null;
     const timeStr = subject.examTime || '09:00';
     const [h, m] = timeStr.split(':').map(Number);
-    const examDt = new Date(subject.examDate);
+    const examDt = parseLocalDate(subject.examDate);
     examDt.setHours(h, m, 0, 0);
     return examDt.getTime() - Date.now();
 }
@@ -546,6 +556,7 @@ function startCountdownInterval() {
     countdownInterval = setInterval(() => {
         if (G.section === 'subjects') {
             refreshSubjectColors(); // update colors as time passes
+            let needsArchive = false;
             document.querySelectorAll('[data-countdown-id]').forEach(el => {
                 const subId = el.dataset.countdownId;
                 const sub = G.data.subjects.find(s => s.id === subId);
@@ -553,6 +564,7 @@ function startCountdownInterval() {
                 const ms = getExamMsLeft(sub);
                 if (ms === null) return;
                 if (ms <= 0) {
+                    if (!sub.archived) needsArchive = true; // معاد الامتحان عدى ولسه مش متأرشفة
                     el.textContent = 'انتهى الامتحان';
                     el.style.color = 'var(--ok)';
                     el.parentElement.classList.remove('countdown-today');
@@ -567,6 +579,11 @@ function startCountdownInterval() {
                 else if (_d <= 7) { el.style.color = 'var(--wa)'; el.parentElement.classList.remove('countdown-today'); }
                 else { el.style.color = ''; el.parentElement.classList.remove('countdown-today'); }
             });
+            // لو لقينا مادة معادها عدى وهي لسه نشطة، أرشفها فورًا وحدّث الشاشة
+            // بدل ما نستنى المستخدم يعمل رندر تاني (فتح/غلق الصفحة) عشان تتنقل للأرشيف
+            if (needsArchive && autoArchivePastExams(false)) {
+                renderSubjects();
+            }
         }
     }, 60000); // every 60 seconds (no need for seconds on subjects page)
 }
@@ -1514,7 +1531,7 @@ function showWeeklyWrapped() {
     const maxH = Math.max(...Object.values(s.byDate), 1);
     const bars = s.weekDates.map((d, i) => {
         const val = s.byDate[d] || 0; const pct = Math.round((val / maxH) * 100);
-        const dayAbbr = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][new Date(d).getDay()];
+        const dayAbbr = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][parseLocalDate(d).getDay()];
         const isToday = d === today();
         return `<div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1"><div style="width:100%;background:var(--s3);border-radius:4px;height:50px;display:flex;align-items:flex-end;overflow:hidden"><div style="width:100%;background:${isToday ? ratingColor : ratingColor + '88'};border-radius:3px 3px 0 0;height:${pct}%;transition:height .5s ease ${i * .05}s"></div></div><div style="font-size:.6rem;color:var(--tm);font-weight:700">${dayAbbr}</div></div>`;
     }).join('');
@@ -1684,7 +1701,7 @@ function buildSystemPrompt() {
         const examEnded = cd ? cd.done : false;
         const studied = allSess.filter(ss => ss.subjectId === s.id).reduce((a, ss) => a + ss.duration, 0);
         const studiedToday = allSess.filter(ss => ss.subjectId === s.id && ss.date === today()).reduce((a, ss) => a + ss.duration, 0);
-        const last7 = allSess.filter(ss => ss.subjectId === s.id && ss.date >= new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10)).reduce((a, ss) => a + ss.duration, 0);
+        const last7 = allSess.filter(ss => ss.subjectId === s.id && ss.date >= toLocalDateStr(new Date(Date.now() - 7 * 86400000))).reduce((a, ss) => a + ss.duration, 0);
         const target = (s.hours || 0) * 60;
         const progress = target > 0 ? Math.round(studied / target * 100) : null;
         const goal = getAutoGoal(s);
@@ -1727,11 +1744,11 @@ function buildSystemPrompt() {
 
     // ── آخر 7 أيام تفصيلي
     const last7dates = [];
-    for (let i = 6; i >= 0; i--) { const d = new Date(); d.setDate(d.getDate() - i); last7dates.push(d.toISOString().slice(0, 10)); }
+    for (let i = 6; i >= 0; i--) { const d = new Date(); d.setDate(d.getDate() - i); last7dates.push(toLocalDateStr(d)); }
     const dailyBreakdown = last7dates.map(d => {
         const dayMin = allSess.filter(s => s.date === d).reduce((a, s) => a + s.duration, 0);
         const isToday = d === today();
-        return `${isToday ? '• اليوم' : '• ' + new Date(d).toLocaleDateString('ar-EG', { weekday: 'short', day: 'numeric' })}: ${formatStudyDuration(dayMin)}${dayMin >= 60 ? ' ✓' : dayMin === 0 ? ' —' : ''}`;
+        return `${isToday ? '• اليوم' : '• ' + parseLocalDate(d).toLocaleDateString('ar-EG', { weekday: 'short', day: 'numeric' })}: ${formatStudyDuration(dayMin)}${dayMin >= 60 ? ' ✓' : dayMin === 0 ? ' —' : ''}`;
     }).join('\n');
 
     // ── حالة فورية (context للمحادثة)
@@ -1922,7 +1939,7 @@ function toggleInsightsArchive() {
 }
 function getRemainingStudyDays(subject, now = new Date()) {
     if (!subject?.examDate) return null;
-    const examDate = new Date(subject.examDate);
+    const examDate = parseLocalDate(subject.examDate);
     const today = new Date(now);
     examDate.setHours(0, 0, 0, 0);
     today.setHours(0, 0, 0, 0);
@@ -1968,7 +1985,7 @@ function renderInsights() {
     // نطاقات زمنية
     const last7dates = getFixedWeekDates(); // أسبوع ثابت Sat → Fri (مش آخر 7 أيام متحركة)
     const last30dates = [];
-    for (let i = 29; i >= 0; i--) { const d = new Date(now); d.setDate(now.getDate() - i); last30dates.push(d.toISOString().slice(0, 10)); }
+    for (let i = 29; i >= 0; i--) { const d = new Date(now); d.setDate(now.getDate() - i); last30dates.push(toLocalDateStr(d)); }
     const sess7 = allSess.filter(s => last7dates.includes(s.date));
     const sess30 = allSess.filter(s => last30dates.includes(s.date));
 
@@ -2062,7 +2079,7 @@ function renderInsights() {
                     <div class="week-chart" style="direction:ltr">
                         ${last7dates.map((d, i) => {
         const v = byDate7[d] || 0; const pct2 = Math.round((v / maxBar) * 100);
-        const day = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][new Date(d).getDay()];
+        const day = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][parseLocalDate(d).getDay()];
         const isToday2 = d === today(); const h = Math.round(v / 60 * 10) / 10;
         return `<div class="week-chart-day">
                                 <div class="week-chart-value">${v > 0 ? h + 'h' : ''}</div>
