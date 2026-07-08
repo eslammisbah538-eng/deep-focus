@@ -2037,7 +2037,9 @@ function renderInsights() {
         const studiedToday = getTodayStudied(s.id);
         const target = (s.hours || 0) * 60;
         const pct = target > 0 ? Math.min(100, Math.round((studied / target) * 100)) : null;
-        const dLeft = daysUntil(s.examDate);
+        // نفس حساب الكارت والعداد بالضبط (بالوقت الفعلي للامتحان)، مش حساب منتصف الليل اللي بيدي يوم زيادة
+        const examMsLeft = getExamMsLeft(s);
+        const dLeft = examMsLeft === null ? null : Math.floor(examMsLeft / 86400000);
         const dk = G.data.flashDecks.find(d => d.subjectId === s.id);
         const subDue = dk ? dk.cards.filter(c => !c.nextReview || c.nextReview <= Date.now()).length : 0;
         const subMastered = dk ? dk.cards.filter(c => c.interval >= 21).length : 0;
@@ -2050,8 +2052,8 @@ function renderInsights() {
 
     // تنبيهات ذكية
     const alerts = [];
-    G.data.subjects.filter(s => !s.done && !s.archived && s.examDate && daysUntil(s.examDate) >= 0 && daysUntil(s.examDate) <= 3)
-        .forEach(s => alerts.push({ type: 'er', icon: 'alert-triangle', msg: `امتحان <strong>${s.name}</strong> ${daysUntil(s.examDate) === 0 ? 'اليوم!' : 'بعد ' + ltrD(daysUntil(s.examDate)) + ' فقط!'}` }));
+    G.data.subjects.filter(s => { const ms = getExamMsLeft(s); return !s.done && !s.archived && ms !== null && ms >= 0 && ms <= 86400000 * 3; })
+        .forEach(s => { const d = Math.floor(getExamMsLeft(s) / 86400000); alerts.push({ type: 'er', icon: 'alert-triangle', msg: `امتحان <strong>${s.name}</strong> ${d === 0 ? 'اليوم!' : 'بعد ' + ltrD(d) + ' فقط!'}` }); });
     subProgress.filter(s => !s.done && !s.archived && s.dLeft !== null && s.dLeft >= 0 && s.dLeft <= 14 && s.studied === 0)
         .forEach(s => alerts.push({ type: 'er', icon: 'book-open', msg: `لم تذاكر <strong>${s.name}</strong> بعد والامتحان بعد ${ltrD(s.dLeft)}` }));
     if (dueCards > 10) alerts.push({ type: 'wa', icon: 'layers', msg: `<strong>${dueCards}</strong> بطاقة للمراجعة — ${formatStudyDuration(10)} الآن تمنع التراكم` });
