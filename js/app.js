@@ -492,6 +492,14 @@ function getExamMsLeft(subject) {
     examDt.setHours(h, m, 0, 0);
     return examDt.getTime() - Date.now();
 }
+// أيام متبقية دقيقة (نفس منطق كارت المادة والعداد بالظبط: مبنية على الوقت الفعلي للامتحان مش التاريخ فقط)
+// بنستخدمها بدل daysUntil في تقرير الأداء عشان الرقم يتطابق مع باقي الأماكن
+function daysLeftExact(subject) {
+    const ms = getExamMsLeft(subject);
+    if (ms === null) return null;
+    if (ms <= 0) return -1;
+    return Math.floor(ms / 86400000);
+}
 // ── تنسيق الوقت المتبقي بالعربي الفصيح
 function formatCountdown(ms) {
     if (ms === null) return null;
@@ -1743,20 +1751,6 @@ function buildSystemPrompt() {
                 `${formatStudyDuration(todayMin)} اليوم`;
 
     return `أنت مساعد دراسي شخصي ذكي اسمك "فوكس". أسلوبك: مباشر، صادق، عملي، تشجيعي لكن واقعي. لا تعطي كلاماً عاماً أبداً — كل رد يجب أن يتضمن أرقاماً وتفاصيل حقيقية. تحدث بثقة كأنك تعرف الطالب شخصياً — لا تقل أبداً "مذكور في بياناتك" أو "وفقاً لسجلاتك" أو أي عبارة تكشف أنك تقرأ من داتا. قل المعلومة مباشرة كأنك تعرفها.
-ردودك مختصرة دايماً — 2 إلى 4 أسطر في الغالب، مفيدة ومباشرة من غير حشو أو مقدمات طويلة أو تكرار. لا تطول في الرد إلا لو المستخدم طلب صراحة تفصيل أكتر (زي "اشرحلي بالتفصيل" أو "وضّح أكتر").
-
-━━━ عن تطبيق Deep Focus ━━━
-Deep Focus تطبيق ويب مجاني للمذاكرة والإنتاجية، بيشتغل من المتصفح مباشرة من غير تسجيل حساب على سيرفر — البيانات محفوظة محلياً على جهاز الطالب نفسه. أهم مميزاته:
-- مؤقت بومودورو (Pomodoro) لجلسات مذاكرة مركزة، مع أصوات أمبيانت (نار فحم، لو-فاي، نسيم ليلي) تساعد على التركيز
-- إدارة مواد دراسية: كل مادة ليها تاريخ امتحان، هدف يومي محسوب تلقائياً، وتتبع للساعات المذاكرة فيها
-- نظام بطاقات تعليمية (Flashcards) بتقنية التكرار المتباعد (Spaced Repetition) للمراجعة الذكية
-- إحصائيات أسبوعية وتحليل أداء (أفضل وقت للمذاكرة، أفضل يوم، الانتظام...)
-- أنا (فوكس) — مساعد ذكاء اصطناعي جوه التطبيق بساعد الطالب بناءً على بياناته الفعلية
-لو مستخدم جديد سألك "التطبيق ده بيعمل إيه" أو "إزاي أستخدمه" — اشرحله باختصار وبساطة إن Deep Focus هدفه يخليه أكثر انتظاماً في المذاكرة عن طريق تتبع المواد والوقت والمراجعة، وابدأ باقتراح إنه يضيف أول مادة دراسية ويحدد تاريخ امتحانها عشان النظام يبدأ يحسبله هدف يومي.
-━━━ عن صاحب الموقع (استخدم هذا فقط لو اتسأل عنه، ورد باختصار — سطرين لتلاتة بالكتير) ━━━
-Deep Focus من تصميم وتطوير Islam Misbah، طالب بكلية العلوم جامعة سوهاج قسم علوم الحاسب، ومطور فرونت إند. عمل التطبيق عشان يساعد الطلاب يذاكروا بانتظام وفعالية أكتر — لو حد سأل ليه اتعمل التطبيق ابدأ بالنقطة دي. لو حد سأل مين عامل التطبيق أو مين المطور أو عايز يعرف عنه، رد باحترافية ومختصر (من غير سرد سيرة ذاتية كاملة) — خد بس اللي متعلق فعلاً بسؤاله.
-لو حد عايز يتواصل معاه لأي سبب (فيدباك، اقتراح، مشكلة، تعاون...) — ابعتله رقمه على واتساب بس، من غير أي رابط: 01103023916. قوله يتواصل معاه مباشرة وهيكون سعيد بالتواصل.
-لو حد شتم أو اتكلم بأسلوب مسيء عن صاحب الموقع أو المطور — متتفاعلش مع الإساءة ومتدخلش في نقاش أو تبرير، رد بجملة واحدة محايدة وابعتله رقم إسلام (01103023916) وقوله يتواصل معاه مباشرة لو عنده أي ملاحظة أو مشكلة.
 
 ━━━ هوية الطالب ━━━
 الاسم: ${G.data.name || 'الطالب'}
@@ -1799,17 +1793,12 @@ ${G.data.subjects.filter(s => s.archived).length > 0 ? '\n━━━ مواد أ�
 17. "فين نقاط ضعفي الحقيقية؟" أو "ليه بقيت مش منتظم؟" → رقم واحد يكشف المشكلة + سبب محتمل + حل واحد مباشر
 18. "وزّع لي مذاكرة كل مادة على الأيام الجاية" → جدول مختصر: اسم المادة + الدقائق اليومية المقترحة، بدون أوقات أو تفاصيل زيادة
 19. "هل المذاكرة وقت متأخر مفيدة؟" → إجابة علمية في سطرين + نصيحة عملية واحدة
-20. "إيه أولويتي دلوقتي؟" → مادة واحدة فقط + سبب رقمي واحد (مثال: "باقي ٣ أيام وعندك ٥٧ دقيقة هدف")
-21. لو حد سأل "ازاي عارف كل ده؟" أو "إنت بتحلل بياناتي إزاي؟" أو أي سؤال عن مصدر المعلومة — ماتشرحش إنك بتقرأ بيانات أو داتا مخزنة، ورد بثقة وطبيعية من غير ما تفضح آلية اشتغالك، وكمّل جاوب على أي سؤال تاني بنفس الثقة دي`;
+20. "إيه أولويتي دلوقتي؟" → مادة واحدة فقط + سبب رقمي واحد (مثال: "باقي ٣ أيام وعندك ٥٧ دقيقة هدف")`;
 }
 
 function formatAIReply(raw) {
     // Escape HTML first
     let t = raw.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    // Extract URLs FIRST and replace with placeholders, so later regexes (digit/bdi wrapping etc.)
-    // never touch the raw link — placeholders contain no digits/symbols that other rules match.
-    const urls = [];
-    t = t.replace(/(https?:\/\/[^\s<]+)/g, (m) => { urls.push(m); return `%%LINK${urls.length - 1}%%`; });
     // Wrap time expressions (e.g. 1:30 AM / 9:00 PM) in a single <bdi> BEFORE splitting individual numbers
     t = t.replace(/(\d{1,2}:\d{2}(?:\s*[APap][Mm])?)/g, '<bdi>$1</bdi>');
     // Wrap remaining standalone numbers + latin units in <bdi> so they don't flip in RTL context
@@ -1836,14 +1825,6 @@ function formatAIReply(raw) {
     t = t.replace(/\n/g, '<br>');
     // Clean up double <br>
     t = t.replace(/(<br>){3,}/g, '<br><br>');
-    // Restore links as styled clickable buttons (placed after <br> conversion so they render on their own line cleanly)
-    t = t.replace(/%%LINK(\d+)%%/g, (_, i) => {
-        const url = urls[parseInt(i, 10)];
-        const isWa = /wa\.me|whatsapp/i.test(url);
-        const label = isWa ? 'تواصل مع إسلام على واتساب' : url;
-        const icon = isWa ? '<i data-lucide="message-circle" style="width:15px;height:15px"></i>' : '<i data-lucide="link" style="width:15px;height:15px"></i>';
-        return `<a href="${url}" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:6px;margin:4px 0;padding:7px 14px;background:var(--p);color:#fff;border-radius:8px;text-decoration:none;font-size:.85rem;font-weight:700">${icon}${label}</a>`;
-    });
     return t;
 }
 
@@ -2041,9 +2022,7 @@ function renderInsights() {
         const studiedToday = getTodayStudied(s.id);
         const target = (s.hours || 0) * 60;
         const pct = target > 0 ? Math.min(100, Math.round((studied / target) * 100)) : null;
-        // نفس حساب الكارت والعداد بالضبط (بالوقت الفعلي للامتحان)، مش حساب منتصف الليل اللي بيدي يوم زيادة
-        const examMsLeft = getExamMsLeft(s);
-        const dLeft = examMsLeft === null ? null : Math.floor(examMsLeft / 86400000);
+        const dLeft = daysLeftExact(s);
         const dk = G.data.flashDecks.find(d => d.subjectId === s.id);
         const subDue = dk ? dk.cards.filter(c => !c.nextReview || c.nextReview <= Date.now()).length : 0;
         const subMastered = dk ? dk.cards.filter(c => c.interval >= 21).length : 0;
@@ -2056,8 +2035,8 @@ function renderInsights() {
 
     // تنبيهات ذكية
     const alerts = [];
-    G.data.subjects.filter(s => { const ms = getExamMsLeft(s); return !s.done && !s.archived && ms !== null && ms >= 0 && ms <= 86400000 * 3; })
-        .forEach(s => { const d = Math.floor(getExamMsLeft(s) / 86400000); alerts.push({ type: 'er', icon: 'alert-triangle', msg: `امتحان <strong>${s.name}</strong> ${d === 0 ? 'اليوم!' : 'بعد ' + ltrD(d) + ' فقط!'}` }); });
+    G.data.subjects.filter(s => !s.done && !s.archived && s.examDate && daysLeftExact(s) >= 0 && daysLeftExact(s) <= 3)
+        .forEach(s => alerts.push({ type: 'er', icon: 'alert-triangle', msg: `امتحان <strong>${s.name}</strong> ${daysLeftExact(s) === 0 ? 'اليوم!' : 'بعد ' + ltrD(daysLeftExact(s)) + ' فقط!'}` }));
     subProgress.filter(s => !s.done && !s.archived && s.dLeft !== null && s.dLeft >= 0 && s.dLeft <= 14 && s.studied === 0)
         .forEach(s => alerts.push({ type: 'er', icon: 'book-open', msg: `لم تذاكر <strong>${s.name}</strong> بعد والامتحان بعد ${ltrD(s.dLeft)}` }));
     if (dueCards > 10) alerts.push({ type: 'wa', icon: 'layers', msg: `<strong>${dueCards}</strong> بطاقة للمراجعة — ${formatStudyDuration(10)} الآن تمنع التراكم` });
