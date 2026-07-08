@@ -370,7 +370,8 @@ function buildECCHtml(s, ms, allSubs) {
         unitsHtml = `<div class="ecc-done">✓ انتهى الامتحان — أحسنت!</div>`;
     } else if (ms !== null) {
         const totalSecs = Math.max(0, Math.floor(ms / 1000));
-        const d = Math.floor(totalSecs / 86400);
+        // استخدم daysUntil بنفس طريقة قسم التقدم لتوحيد الأرقام
+        const d = dLeft > 0 ? dLeft : Math.floor(totalSecs / 86400);
         const h = Math.floor((totalSecs % 86400) / 3600);
         const m = Math.floor((totalSecs % 3600) / 60);
         const sec = totalSecs % 60;
