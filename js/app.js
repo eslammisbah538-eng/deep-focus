@@ -53,20 +53,6 @@ function uid() { return '_' + (Date.now() + Math.random()).toString(36).replace(
 function ltrD(n) { return `<bdi>${n}d</bdi>`; }
 function ltrDt(n) { return n + 'd'; } // نسخة نص فقط (للـ toast والـ system prompt)
 function today() { return new Date().toISOString().slice(0, 10); }
-// أسبوع ثابت يبدأ السبت وينتهي الجمعة (Sat → Fri) — مش آخر 7 أيام متحركة
-// بيرجع 7 تواريخ بالترتيب الزمني: [السبت, الأحد, الاتنين, الثلاثاء, الأربع, الخميس, الجمعة]
-function getFixedWeekDates() {
-    const now = new Date();
-    const day = now.getDay(); // 0=Sun, 1=Mon ... 6=Sat
-    const diffFromSat = (day + 1) % 7; // Sat→0, Sun→1, Mon→2, Tue→3, Wed→4, Thu→5, Fri→6
-    const dates = [];
-    for (let i = 0; i < 7; i++) {
-        const d = new Date(now);
-        d.setDate(now.getDate() - diffFromSat + i);
-        dates.push(d.toISOString().slice(0, 10));
-    }
-    return dates;
-}
 function formatStudyDuration(minutes) {
     const total = Math.max(0, Math.round(Number(minutes) || 0));
     if (total < 60) return `${total}m`;
@@ -492,14 +478,6 @@ function getExamMsLeft(subject) {
     examDt.setHours(h, m, 0, 0);
     return examDt.getTime() - Date.now();
 }
-// أيام متبقية دقيقة (نفس منطق كارت المادة والعداد بالظبط: مبنية على الوقت الفعلي للامتحان مش التاريخ فقط)
-// بنستخدمها بدل daysUntil في تقرير الأداء عشان الرقم يتطابق مع باقي الأماكن
-function daysLeftExact(subject) {
-    const ms = getExamMsLeft(subject);
-    if (ms === null) return null;
-    if (ms <= 0) return -1;
-    return Math.floor(ms / 86400000);
-}
 // ── تنسيق الوقت المتبقي بالعربي الفصيح
 function formatCountdown(ms) {
     if (ms === null) return null;
@@ -510,9 +488,9 @@ function formatCountdown(ms) {
     const mins = Math.floor((totalSecs % 3600) / 60);
     const isToday = days === 0;
 
-    const formatHours = (value) => value === 1 ? 'ساعة' : value === 2 ? 'ساعتين' : value <= 10 ? `${value} ساعات` : `${value} ساعة`;
-    const formatMinutes = (value) => value === 1 ? 'دقيقة' : value === 2 ? 'دقيقتين' : value <= 10 ? `${value} دقائق` : `${value} دقيقة`;
-    const formatDays = (value) => value === 1 ? 'يوم' : value === 2 ? 'يومين' : value <= 10 ? `${value} أيام` : `${value} يوم`;
+    const formatHours = (value) => `${value} ${value === 1 ? 'ساعة' : 'ساعات'}`;
+    const formatMinutes = (value) => `${value} ${value === 1 ? 'دقيقة' : 'دقائق'}`;
+    const formatDays = (value) => `${value} ${value === 1 ? 'يوم' : 'أيام'}`;
 
     let text = '';
 
@@ -568,7 +546,7 @@ function startCountdownInterval() {
                 const _d = Math.floor(ms / 86400000);
                 const fc = formatCountdown(ms);
                 el.textContent = fc ? fc.text : '';
-                el.setAttribute('dir', 'rtl');
+                el.setAttribute('dir', 'ltr');
                 if (_d === 0) { el.style.color = 'var(--er)'; el.parentElement.classList.add('countdown-today'); }
                 else if (_d <= 3) { el.style.color = 'var(--er)'; el.parentElement.classList.remove('countdown-today'); }
                 else if (_d <= 7) { el.style.color = 'var(--wa)'; el.parentElement.classList.remove('countdown-today'); }
@@ -644,14 +622,14 @@ function buildSubjectCard(s, isArchived, isNearest) {
         const nearestColor = isToday ? 'var(--er)' : d <= 3 ? 'var(--er)' : d <= 7 ? 'var(--wa)' : 'var(--p)';
         examHtml = `<div class="sc-exam${isToday ? ' countdown-today' : ''}">
                     <i data-lucide="calendar-clock"></i>
-                    <span dir="rtl" data-countdown-id="${s.id}" style="color:${nearestColor};font-weight:800">${cdText}</span>
+                    <span dir="ltr" data-countdown-id="${s.id}" style="color:${nearestColor};font-weight:800">${cdText}</span>
                     <span style="font-size:.63rem;background:${isToday ? 'rgba(255,92,92,.12)' : d <= 3 ? 'rgba(255,92,92,.1)' : d <= 7 ? 'rgba(255,179,71,.1)' : 'var(--pg)'};color:${nearestColor};padding:1px 6px;border-radius:8px;font-weight:800;border:1px solid ${isToday ? 'rgba(255,92,92,.3)' : d <= 7 ? 'rgba(255,179,71,.25)' : 'rgba(91,138,255,.25)'}">أقرب</span>
                     ${p !== 'done' && p !== 'low' ? `<span class="ts-priority priority-${p}" style="font-size:.65rem">${pL[p]}</span>` : ''}
                 </div>`;
     } else if (cd && cd.isToday) {
-        examHtml = `<div class="sc-exam countdown-today"><i data-lucide="calendar"></i> <span dir="rtl" class="countdown-text" data-countdown-id="${s.id}" style="color:var(--er);font-weight:800">${cd.text}</span></div>`;
+        examHtml = `<div class="sc-exam countdown-today"><i data-lucide="calendar"></i> <span dir="ltr" class="countdown-text" data-countdown-id="${s.id}" style="color:var(--er);font-weight:800">${cd.text}</span></div>`;
     } else {
-        examHtml = `<div class="sc-exam"><i data-lucide="calendar"></i> <span dir="rtl" data-countdown-id="${s.id}">${cd ? cd.text : ''}</span>${p !== 'done' && p !== 'low' ? `<span class="ts-priority priority-${p}" style="font-size:.68rem;margin-right:5px">${pL[p]}</span>` : ''}</div>`;
+        examHtml = `<div class="sc-exam"><i data-lucide="calendar"></i> <span dir="ltr" data-countdown-id="${s.id}">${cd ? cd.text : ''}</span>${p !== 'done' && p !== 'low' ? `<span class="ts-priority priority-${p}" style="font-size:.68rem;margin-right:5px">${pL[p]}</span>` : ''}</div>`;
     }
     const studied = G.data.sessions.filter(ss => ss.subjectId === s.id && ss.type === 'pomo').reduce((a, ss) => a + ss.duration, 0);
     const estMin = (s.hours || 0) * 60;
@@ -857,15 +835,6 @@ function resetPomo() {
     updatePomoUI();
 }
 function setPomoMode(mode) { if (G.pomo.running) { G.pomo._nextMode = mode; document.querySelectorAll('.pomo-mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode)); return; } clearInterval(G.pomo.timer); G.pomo.running = false; const ps = document.getElementById('pomo-start'); if (ps) { ps.innerHTML = '<i data-lucide="play"></i> ابدأ'; lucide.createIcons(); } G.pomo.mode = mode; const d = getDurations(); G.pomo.timeLeft = d[mode] * 60; G.pomo.fullDuration = G.pomo.timeLeft; document.querySelectorAll('.pomo-mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode)); updatePomoUI(); }
-// لما المستخدم يغيّر قيمة مدة التركيز/الاستراحة يدويًا، حدّث العداد فورًا لو التايمر مش شغال
-function handlePomoDurationInputChange() {
-    if (G.pomo.running) return; // ماينفعش نلمس تايمر شغال فعليًا
-    const d = getDurations();
-    G.pomo.timeLeft = d[G.pomo.mode] * 60;
-    G.pomo.fullDuration = G.pomo.timeLeft;
-    G.pomo._subjectStartTimeLeft = G.pomo.timeLeft;
-    updatePomoUI();
-}
 function pomoDone() {
     const mode = G.pomo.mode; const subId = document.getElementById('pomo-subject-sel')?.value; const d = getDurations(); const dur = d[mode];
     const snd = document.getElementById('pomo-sound'); if (snd?.checked) playBeep();
@@ -976,16 +945,7 @@ function showReviewCard() {
     G.fc.flipped = false; document.getElementById('fc-card').classList.remove('flipped'); document.getElementById('fc-card-front').textContent = card.front; document.getElementById('fc-card-back').textContent = card.back;
     document.getElementById('fc-rev-progress').textContent = `البطاقة ${G.fc.reviewIdx + 1} من ${G.fc.reviewQ.length}`; document.getElementById('fc-flip-hint').classList.remove('hidden'); document.getElementById('fc-review-actions').classList.add('hidden');
 }
-function flipCard() {
-    if (G.fc.flipped) return;
-    G.fc.flipped = true;
-    const cardEl = document.getElementById('fc-card');
-    cardEl.classList.add('gpu-boost'); // GPU layer بس وقت الفليب
-    cardEl.classList.add('flipped');
-    cardEl.addEventListener('transitionend', () => cardEl.classList.remove('gpu-boost'), { once: true });
-    document.getElementById('fc-flip-hint').classList.add('hidden');
-    document.getElementById('fc-review-actions').classList.remove('hidden');
-}
+function flipCard() { if (G.fc.flipped) return; G.fc.flipped = true; document.getElementById('fc-card').classList.add('flipped'); document.getElementById('fc-flip-hint').classList.add('hidden'); document.getElementById('fc-review-actions').classList.remove('hidden'); }
 function rateCard(knew) {
     const card = G.fc.reviewQ[G.fc.reviewIdx]; if (!card) return; const dk = G.data.flashDecks.find(d => d.id === G.fc.deckId); const realCard = dk.cards.find(c => c.id === card.id); if (!realCard) return;
     if (!knew) {
@@ -1487,7 +1447,9 @@ function renderAmbientSection() {
 
 // ── WEEKLY STATS (التعديل 5 و 6 و 7)
 function getWeeklyStats() {
-    const weekDates = getFixedWeekDates();
+    const now = new Date();
+    const weekDates = [];
+    for (let i = 6; i >= 0; i--) { const d = new Date(now); d.setDate(now.getDate() - i); weekDates.push(d.toISOString().slice(0, 10)); }
     const sessions = G.data.sessions.filter(s => s.type === 'pomo' && weekDates.includes(s.date));
     const totalMin = sessions.reduce((a, s) => a + s.duration, 0);
     const totalHours = Math.round(totalMin / 60 * 10) / 10;
@@ -1555,7 +1517,7 @@ function getWeekNumber() {
 
 function checkAutoShowWrapped() {
     const now = new Date();
-    if (now.getDay() !== 5) return; // Only on Friday (last day of the Sat→Fri week)
+    if (now.getDay() !== 0) return; // Only on Sunday
     const weekKey = today().slice(0, 7) + '-W' + getWeekNumber();
     const shown = localStorage.getItem('df_wrapped_shown');
     if (shown === weekKey) return;
@@ -1973,8 +1935,8 @@ function renderInsights() {
     const now = new Date();
 
     // نطاقات زمنية
-    const last7dates = getFixedWeekDates(); // أسبوع ثابت Sat → Fri (مش آخر 7 أيام متحركة)
-    const last30dates = [];
+    const last7dates = [], last30dates = [];
+    for (let i = 6; i >= 0; i--) { const d = new Date(now); d.setDate(now.getDate() - i); last7dates.push(d.toISOString().slice(0, 10)); }
     for (let i = 29; i >= 0; i--) { const d = new Date(now); d.setDate(now.getDate() - i); last30dates.push(d.toISOString().slice(0, 10)); }
     const sess7 = allSess.filter(s => last7dates.includes(s.date));
     const sess30 = allSess.filter(s => last30dates.includes(s.date));
@@ -2022,7 +1984,7 @@ function renderInsights() {
         const studiedToday = getTodayStudied(s.id);
         const target = (s.hours || 0) * 60;
         const pct = target > 0 ? Math.min(100, Math.round((studied / target) * 100)) : null;
-        const dLeft = daysLeftExact(s);
+        const dLeft = daysUntil(s.examDate);
         const dk = G.data.flashDecks.find(d => d.subjectId === s.id);
         const subDue = dk ? dk.cards.filter(c => !c.nextReview || c.nextReview <= Date.now()).length : 0;
         const subMastered = dk ? dk.cards.filter(c => c.interval >= 21).length : 0;
@@ -2035,8 +1997,8 @@ function renderInsights() {
 
     // تنبيهات ذكية
     const alerts = [];
-    G.data.subjects.filter(s => !s.done && !s.archived && s.examDate && daysLeftExact(s) >= 0 && daysLeftExact(s) <= 3)
-        .forEach(s => alerts.push({ type: 'er', icon: 'alert-triangle', msg: `امتحان <strong>${s.name}</strong> ${daysLeftExact(s) === 0 ? 'اليوم!' : 'بعد ' + ltrD(daysLeftExact(s)) + ' فقط!'}` }));
+    G.data.subjects.filter(s => !s.done && !s.archived && s.examDate && daysUntil(s.examDate) >= 0 && daysUntil(s.examDate) <= 3)
+        .forEach(s => alerts.push({ type: 'er', icon: 'alert-triangle', msg: `امتحان <strong>${s.name}</strong> ${daysUntil(s.examDate) === 0 ? 'اليوم!' : 'بعد ' + ltrD(daysUntil(s.examDate)) + ' فقط!'}` }));
     subProgress.filter(s => !s.done && !s.archived && s.dLeft !== null && s.dLeft >= 0 && s.dLeft <= 14 && s.studied === 0)
         .forEach(s => alerts.push({ type: 'er', icon: 'book-open', msg: `لم تذاكر <strong>${s.name}</strong> بعد والامتحان بعد ${ltrD(s.dLeft)}` }));
     if (dueCards > 10) alerts.push({ type: 'wa', icon: 'layers', msg: `<strong>${dueCards}</strong> بطاقة للمراجعة — ${formatStudyDuration(10)} الآن تمنع التراكم` });
@@ -2189,19 +2151,6 @@ document.addEventListener('visibilitychange', () => {
             }
         }
         G.pomo._lastTick = null;
-
-        // Force a quick repaint of the app shell. On some weak Android phones, GPU
-        // composite layers get corrupted (shown as static/noise) while the app was
-        // backgrounded; toggling this class nudges the browser to redraw everything.
-        const appEl = document.getElementById('app');
-        if (appEl) {
-            appEl.classList.add('df-repaint-hack');
-            requestAnimationFrame(() => {
-                requestAnimationFrame(() => {
-                    appEl.classList.remove('df-repaint-hack');
-                });
-            });
-        }
     } else {
         G.pomo._lastTick = Date.now();
     }
@@ -2280,9 +2229,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('pomo-start')?.addEventListener('click', startPomo);
     document.getElementById('pomo-reset')?.addEventListener('click', resetPomo);
     document.querySelectorAll('.pomo-mode-btn').forEach(b => b.addEventListener('click', () => setPomoMode(b.dataset.mode)));
-    ['pomo-focus-dur', 'pomo-short-dur', 'pomo-long-dur'].forEach(id => {
-        document.getElementById(id)?.addEventListener('input', handlePomoDurationInputChange);
-    });
 
     // Auto-sync pomodoro subject change → save elapsed for old, start fresh for new
     document.getElementById('sec-pomodoro')?.addEventListener('change', e => {
@@ -2311,4 +2257,3 @@ document.addEventListener('DOMContentLoaded', () => {
     lucide.createIcons();
 });
 
-// أو لو أنيميشن CSS keyframes: استخدم 'animationend' بدل transitionend
