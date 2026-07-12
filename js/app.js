@@ -61,6 +61,16 @@ function formatStudyDuration(minutes) {
     if (mins === 0) return `${hours}h`;
     return `${hours}h ${mins}m`;
 }
+// نسخة عربية بحتة من نفس التنسيق (بدون حروف إنجليزية d/h/m) — تمنع تشتت اتجاه النص
+// عند تضمينها داخل جملة عربية طويلة (مثل رسالة الترحيب في الشات بوت)
+function formatStudyDurationAr(minutes) {
+    const total = Math.max(0, Math.round(Number(minutes) || 0));
+    if (total < 60) return arCount(total, 'دقيقة', 'دقيقتين', 'دقائق');
+    const hours = Math.floor(total / 60);
+    const mins = total % 60;
+    if (mins === 0) return arCount(hours, 'ساعة', 'ساعتين', 'ساعات');
+    return `${arCount(hours, 'ساعة', 'ساعتين', 'ساعات')} و${arCount(mins, 'دقيقة', 'دقيقتين', 'دقائق')}`;
+}
 
 function daysUntil(d) { if (!d) return null; return Math.ceil((new Date(d).setHours(0, 0, 0, 0) - new Date().setHours(0, 0, 0, 0)) / 86400000); }
 function getPriority(d) { const n = daysUntil(d); if (n === null) return 'low'; if (n < 0) return 'done'; if (n <= 3) return 'critical'; if (n <= 7) return 'high'; if (n <= 14) return 'medium'; return 'low'; }
@@ -478,6 +488,25 @@ function getExamMsLeft(subject) {
     examDt.setHours(h, m, 0, 0);
     return examDt.getTime() - Date.now();
 }
+// ── مصدر واحد لعدد الأيام المتبقية للامتحان (بدقة الساعة عبر getExamMsLeft)
+// تستخدمه كل الأماكن التي تعرض "الأيام المتبقية" (كارت المادة، الشات بوت، وقسم الأداء)
+// حتى لا يختلف الرقم المعروض من مكان لآخر
+function getExamDaysLeft(subject) {
+    const ms = getExamMsLeft(subject);
+    if (ms === null) return null;
+    if (ms <= 0) return -1; // الامتحان انتهى
+    return Math.floor(ms / 86400000);
+}
+// ── صياغة عدد عربي صحيح نحويًا: مفرد (1) / مثنى (2) / جمع (3-10) / تمييز مفرد منصوب (11+)
+// مثال: arCount(1,'يوم','يومين','أيام') → 'يوم' | arCount(2,...) → 'يومين' | arCount(9,...) → '9 أيام' | arCount(19,...) → '19 يوم'
+function arCount(n, singular, dual, plural) {
+    const v = Math.abs(Math.round(n));
+    if (v === 0) return `0 ${singular}`;
+    if (v === 1) return singular;
+    if (v === 2) return dual;
+    if (v >= 3 && v <= 10) return `${v} ${plural}`;
+    return `${v} ${singular}`;
+}
 // ── تنسيق الوقت المتبقي بالعربي الفصيح
 function formatCountdown(ms) {
     if (ms === null) return null;
@@ -488,9 +517,9 @@ function formatCountdown(ms) {
     const mins = Math.floor((totalSecs % 3600) / 60);
     const isToday = days === 0;
 
-    const formatHours = (value) => `${value} ${value === 1 ? 'ساعة' : 'ساعات'}`;
-    const formatMinutes = (value) => `${value} ${value === 1 ? 'دقيقة' : 'دقائق'}`;
-    const formatDays = (value) => `${value} ${value === 1 ? 'يوم' : 'أيام'}`;
+    const formatHours = (value) => arCount(value, 'ساعة', 'ساعتين', 'ساعات');
+    const formatMinutes = (value) => arCount(value, 'دقيقة', 'دقيقتين', 'دقائق');
+    const formatDays = (value) => arCount(value, 'يوم', 'يومين', 'أيام');
 
     let text = '';
 
@@ -622,14 +651,14 @@ function buildSubjectCard(s, isArchived, isNearest) {
         const nearestColor = isToday ? 'var(--er)' : d <= 3 ? 'var(--er)' : d <= 7 ? 'var(--wa)' : 'var(--p)';
         examHtml = `<div class="sc-exam${isToday ? ' countdown-today' : ''}">
                     <i data-lucide="calendar-clock"></i>
-                    <span dir="ltr" data-countdown-id="${s.id}" style="color:${nearestColor};font-weight:800">${cdText}</span>
+                    <span dir="rtl" data-countdown-id="${s.id}" style="color:${nearestColor};font-weight:800">${cdText}</span>
                     <span style="font-size:.63rem;background:${isToday ? 'rgba(255,92,92,.12)' : d <= 3 ? 'rgba(255,92,92,.1)' : d <= 7 ? 'rgba(255,179,71,.1)' : 'var(--pg)'};color:${nearestColor};padding:1px 6px;border-radius:8px;font-weight:800;border:1px solid ${isToday ? 'rgba(255,92,92,.3)' : d <= 7 ? 'rgba(255,179,71,.25)' : 'rgba(91,138,255,.25)'}">أقرب</span>
                     ${p !== 'done' && p !== 'low' ? `<span class="ts-priority priority-${p}" style="font-size:.65rem">${pL[p]}</span>` : ''}
                 </div>`;
     } else if (cd && cd.isToday) {
-        examHtml = `<div class="sc-exam countdown-today"><i data-lucide="calendar"></i> <span dir="ltr" class="countdown-text" data-countdown-id="${s.id}" style="color:var(--er);font-weight:800">${cd.text}</span></div>`;
+        examHtml = `<div class="sc-exam countdown-today"><i data-lucide="calendar"></i> <span dir="rtl" class="countdown-text" data-countdown-id="${s.id}" style="color:var(--er);font-weight:800">${cd.text}</span></div>`;
     } else {
-        examHtml = `<div class="sc-exam"><i data-lucide="calendar"></i> <span dir="ltr" data-countdown-id="${s.id}">${cd ? cd.text : ''}</span>${p !== 'done' && p !== 'low' ? `<span class="ts-priority priority-${p}" style="font-size:.68rem;margin-right:5px">${pL[p]}</span>` : ''}</div>`;
+        examHtml = `<div class="sc-exam"><i data-lucide="calendar"></i> <span dir="rtl" data-countdown-id="${s.id}">${cd ? cd.text : ''}</span>${p !== 'done' && p !== 'low' ? `<span class="ts-priority priority-${p}" style="font-size:.68rem;margin-right:5px">${pL[p]}</span>` : ''}</div>`;
     }
     const studied = G.data.sessions.filter(ss => ss.subjectId === s.id && ss.type === 'pomo').reduce((a, ss) => a + ss.duration, 0);
     const estMin = (s.hours || 0) * 60;
@@ -732,7 +761,7 @@ function saveSubject() {
 function deleteSubject(id) { if (!confirm('حذف المادة؟')) return; G.data.subjects = G.data.subjects.filter(s => s.id !== id); saveData(); renderSubjects(); showToast('تم الحذف'); }
 function editSubject(id) {
     const s = G.data.subjects.find(x => x.id === id); if (!s) return;
-    openModal('تعديل المادة', `<div style="display:flex;flex-direction:column;gap:10px"><input type="text" id="edit-sub-name" value="${s.name}"><div style="display:flex;gap:8px"><input type="date" id="edit-sub-date" value="${s.examDate || ''}" style="flex:1"><input type="time" id="edit-sub-time" value="${s.examTime || '09:00'}" style="flex:1"></div><input type="number" id="edit-sub-hours" value="${s.hours || ''}" placeholder="ساعات تقديرية"></div><div style="margin-top:10px;padding:8px 12px;background:var(--s2);border-radius:var(--rs);font-size:.78rem;color:var(--tm);display:flex;align-items:center;gap:8px"><i data-lucide="info" style="width:13px;height:13px"></i> اللون يتحدد تلقائياً حسب قرب الامتحان</div>`,
+    openModal('تعديل المادة', `<div style="display:flex;flex-direction:column;gap:10px"><input type="text" id="edit-sub-name" value="${s.name}"><div style="display:flex;gap:8px"><div style="flex:1;display:flex;flex-direction:column;gap:4px"><label for="edit-sub-date" style="font-size:.72rem;color:var(--tm);padding:0 2px">التاريخ</label><input type="date" id="edit-sub-date" value="${s.examDate || ''}"></div><div style="flex:1;display:flex;flex-direction:column;gap:4px"><label for="edit-sub-time" style="font-size:.72rem;color:var(--tm);padding:0 2px">الوقت</label><input type="time" id="edit-sub-time" value="${s.examTime || '09:00'}"></div></div><input type="number" id="edit-sub-hours" value="${s.hours || ''}" placeholder="ساعات تقديرية"></div><div style="margin-top:10px;padding:8px 12px;background:var(--s2);border-radius:var(--rs);font-size:.78rem;color:var(--tm);display:flex;align-items:center;gap:8px"><i data-lucide="info" style="width:13px;height:13px"></i> اللون يتحدد تلقائياً حسب قرب الامتحان</div>`,
         `<button class="btn-primary" onclick="saveEditSubject('${id}')">حفظ</button><button class="btn-ghost" onclick="closeModal()">إلغاء</button>`);
 }
 function saveEditSubject(id) {
@@ -770,6 +799,20 @@ function renderPomoLog() {
     el.innerHTML = log.map(s => { const sub = G.data.subjects.find(x => x.id === s.subjectId); const t = new Date(s.ts || Date.now()).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' }); return `<div class="pomo-log-item"><div class="pomo-log-dot ${s.type === 'break' ? 'break' : ''}"></div><div class="pomo-log-info"><div>${s.type === 'pomo' ? 'تركيز' : 'راحة'} — ${formatStudyDuration(s.duration)}${sub ? ' · ' + sub.name : ''}</div><div class="pomo-log-time">${t}</div></div></div>`; }).join('');
 }
 function getDurations() { return { focus: parseInt(document.getElementById('pomo-focus-dur')?.value || 25), short: parseInt(document.getElementById('pomo-short-dur')?.value || 5), long: parseInt(document.getElementById('pomo-long-dur')?.value || 15) }; }
+// ── تحديث لحظي لمدة البومودورو عند تعديل حقل المدة، بدون الحاجة للتنقل بين الأوضاع
+// لو الوضع الحالي (تركيز/استراحة قصيرة/طويلة) هو نفسه اللي بيتعدل مدته والمؤقت مش شغال، يتحدث العداد فورًا
+function handlePomoDurInput(fieldId) {
+    const fieldToMode = { 'pomo-focus-dur': 'focus', 'pomo-short-dur': 'short', 'pomo-long-dur': 'long' };
+    const mode = fieldToMode[fieldId];
+    if (!mode || G.pomo.mode !== mode || G.pomo.running) return;
+    const d = getDurations();
+    const mins = Math.max(1, d[mode] || 1);
+    G.pomo.timeLeft = mins * 60;
+    G.pomo.fullDuration = G.pomo.timeLeft;
+    G.pomo._subjectStartTimeLeft = G.pomo.timeLeft;
+    updatePomoUI();
+    syncFocusMode();
+}
 function updatePomoUI() {
     const m = Math.floor(G.pomo.timeLeft / 60), s = G.pomo.timeLeft % 60;
     const pt = document.getElementById('pomo-time'); if (pt) pt.textContent = String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
@@ -1554,11 +1597,11 @@ function renderAIHelp() {
         contextMsg = `<i data-lucide="zap"></i> امتحان <strong>${urgentSub.name}</strong> اليوم! خبرني كيف أقدر أساعدك.`;
     } else if (urgentSub && daysUntil(urgentSub.examDate) <= 3) {
         const studiedSub = allSess.filter(s => s.subjectId === urgentSub.id).reduce((a, s) => a + s.duration, 0);
-        contextMsg = `<i data-lucide="alert-triangle"></i> <strong>${urgentSub.name}</strong> بعد ${ltrD(daysUntil(urgentSub.examDate))} — ذاكرت ${Math.round(studiedSub / 60 * 10) / 10}h. اسألني أي حاجة.`;
+        contextMsg = `<i data-lucide="alert-triangle"></i> <strong>${urgentSub.name}</strong> بعد ${arCount(daysUntil(urgentSub.examDate), 'يوم', 'يومين', 'أيام')} — ذاكرت ${formatStudyDurationAr(studiedSub)}. اسألني أي حاجة.`;
     } else if (todayMin === 0 && hour >= 9) {
         contextMsg = `لسه ما بدأتش النهارده. إيه اللي بيمنعك؟ أقدر أساعدك تبدأ دلوقتي.`;
     } else if (todayMin >= 120) {
-        contextMsg = `${Math.round(todayMin / 60 * 10) / 10}h النهارده <i data-lucide="fire"></i> شغال تمام — خبرني تحتاج إيه.`;
+        contextMsg = `${formatStudyDurationAr(todayMin)} النهارده <i data-lucide="fire"></i> شغال تمام — خبرني تحتاج إيه.`;
     } else if (dueCards > 5) {
         contextMsg = `عندك <strong>${dueCards} بطاقة</strong> للمراجعة. تراجعها دلوقتي ولا تبدأ بموضوع تاني؟`;
     } else if (weekly.activeDays < 2 && weekly.pomodoroCount === 0) {
@@ -1755,7 +1798,9 @@ ${G.data.subjects.filter(s => s.archived).length > 0 ? '\n━━━ مواد أ�
 17. "فين نقاط ضعفي الحقيقية؟" أو "ليه بقيت مش منتظم؟" → رقم واحد يكشف المشكلة + سبب محتمل + حل واحد مباشر
 18. "وزّع لي مذاكرة كل مادة على الأيام الجاية" → جدول مختصر: اسم المادة + الدقائق اليومية المقترحة، بدون أوقات أو تفاصيل زيادة
 19. "هل المذاكرة وقت متأخر مفيدة؟" → إجابة علمية في سطرين + نصيحة عملية واحدة
-20. "إيه أولويتي دلوقتي؟" → مادة واحدة فقط + سبب رقمي واحد (مثال: "باقي ٣ أيام وعندك ٥٧ دقيقة هدف")`;
+20. "إيه أولويتي دلوقتي؟" → مادة واحدة فقط + سبب رقمي واحد (مثال: "باقي ٣ أيام وعندك ٥٧ دقيقة هدف")
+21. لو سُئلت عن صاحب الموقع / مبرمج التطبيق / مين اللي عمل الموقع ده (بأي صياغة) — رد بالمعلومات دي بالظبط ولا تخترع تفاصيل زيادة:
+   الموقع من تصميم وتطوير إسلام مصباح، طالب بكلية العلوم جامعة سوهاج قسم حاسب. إسلام مبرمج Frontend Developer شغوف ببناء أدوات تجعل التعلم أذكى وأكثر متعة، وهو اللي صمم وبنى تطبيق Deep Focus بالكامل من الصفر بهدف مساعدة الطلاب على التنظيم والتركيز والمذاكرة بكفاءة، من خلال أدوات زي البومودورو تايمر، الفلاش كاردز بالذكاء الاصطناعي، الأصوات المحيطة، وتقارير الأداء. من مهاراته: HTML/CSS/JS، React، UI/UX، CSS Animations، AI Integration. للتواصل معاه واتساب: 01103023916. لو حد عايز يطلب حاجة أو يتواصل معاه، اديله الرقم وقوله يتواصل مباشرة معاه`;
 }
 
 function formatAIReply(raw) {
@@ -1984,7 +2029,7 @@ function renderInsights() {
         const studiedToday = getTodayStudied(s.id);
         const target = (s.hours || 0) * 60;
         const pct = target > 0 ? Math.min(100, Math.round((studied / target) * 100)) : null;
-        const dLeft = daysUntil(s.examDate);
+        const dLeft = getExamDaysLeft(s);
         const dk = G.data.flashDecks.find(d => d.subjectId === s.id);
         const subDue = dk ? dk.cards.filter(c => !c.nextReview || c.nextReview <= Date.now()).length : 0;
         const subMastered = dk ? dk.cards.filter(c => c.interval >= 21).length : 0;
@@ -1997,8 +2042,8 @@ function renderInsights() {
 
     // تنبيهات ذكية
     const alerts = [];
-    G.data.subjects.filter(s => !s.done && !s.archived && s.examDate && daysUntil(s.examDate) >= 0 && daysUntil(s.examDate) <= 3)
-        .forEach(s => alerts.push({ type: 'er', icon: 'alert-triangle', msg: `امتحان <strong>${s.name}</strong> ${daysUntil(s.examDate) === 0 ? 'اليوم!' : 'بعد ' + ltrD(daysUntil(s.examDate)) + ' فقط!'}` }));
+    G.data.subjects.filter(s => !s.done && !s.archived && s.examDate && getExamDaysLeft(s) !== null && getExamDaysLeft(s) >= 0 && getExamDaysLeft(s) <= 3)
+        .forEach(s => alerts.push({ type: 'er', icon: 'alert-triangle', msg: `امتحان <strong>${s.name}</strong> ${getExamDaysLeft(s) === 0 ? 'اليوم!' : 'بعد ' + ltrD(getExamDaysLeft(s)) + ' فقط!'}` }));
     subProgress.filter(s => !s.done && !s.archived && s.dLeft !== null && s.dLeft >= 0 && s.dLeft <= 14 && s.studied === 0)
         .forEach(s => alerts.push({ type: 'er', icon: 'book-open', msg: `لم تذاكر <strong>${s.name}</strong> بعد والامتحان بعد ${ltrD(s.dLeft)}` }));
     if (dueCards > 10) alerts.push({ type: 'wa', icon: 'layers', msg: `<strong>${dueCards}</strong> بطاقة للمراجعة — ${formatStudyDuration(10)} الآن تمنع التراكم` });
@@ -2238,6 +2283,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // تحديث لحظي عند تعديل مدة البومودورو (بدون الحاجة للتنقل بين الأوضاع)
+    document.getElementById('sec-pomodoro')?.addEventListener('input', e => {
+        if (['pomo-focus-dur', 'pomo-short-dur', 'pomo-long-dur'].includes(e.target.id)) {
+            handlePomoDurInput(e.target.id);
+        }
+    });
+
     // Flashcards
     document.getElementById('fc-add-deck-btn')?.addEventListener('click', () => { document.getElementById('fc-add-deck-form').classList.toggle('hidden'); populateSubjectSelects(); });
     document.getElementById('fc-deck-save')?.addEventListener('click', addDeckFromForm);
@@ -2256,4 +2308,3 @@ document.addEventListener('DOMContentLoaded', () => {
     updatePomoUI(); exitReview();
     lucide.createIcons();
 });
-
