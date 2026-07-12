@@ -927,6 +927,24 @@ a {
     min-width: 130px
 }
 
+.field-group {
+    flex: 1;
+    min-width: 130px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px
+}
+
+.field-group input {
+    min-width: 0
+}
+
+.field-label {
+    font-size: .72rem;
+    color: var(--tm);
+    padding: 0 2px
+}
+
 .form-actions {
     display: flex;
     gap: 8px;
