@@ -590,17 +590,14 @@
                             <div id="ai-messages"></div>
                         </div>
                         <div class="ai-input-area">
-                            <textarea id="ai-input" placeholder="Ask me anything..."
-                                rows="1"></textarea>
-                            <div style="display:flex;flex-direction:column;gap:5px;align-self:flex-end">
-                                <button id="ai-send" class="btn-primary"
-                                    style="padding:10px 16px;display:flex;align-items:center;gap:5px"><i
-                                        data-lucide="send"></i> إرسال</button>
-                                <button id="ai-clear" onclick="clearAIChat()" title="مسح المحادثة"
-                                    style="background:var(--s2);border:1px solid var(--bo);color:var(--td);padding:6px 8px;border-radius:var(--rs);font-size:.7rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;transition:all .2s"
-                                    onmouseover="this.style.color='var(--er)';this.style.borderColor='var(--er)'"
-                                    onmouseout="this.style.color='var(--td)';this.style.borderColor='var(--bo)'"><i
-                                        data-lucide="trash-2" style="width:13px;height:13px"></i></button>
+                            <button id="ai-clear" onclick="clearAIChat()" title="مسح المحادثة">
+                                <i data-lucide="trash-2"></i>
+                            </button>
+                            <div class="ai-input-pill">
+                                <textarea id="ai-input" placeholder="اسألني أي حاجة..." rows="1"></textarea>
+                                <button id="ai-send" class="btn-primary">
+                                    <i data-lucide="arrow-up"></i>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -735,6 +732,19 @@
                     setTimeout(function () { setKb(false); }, 100);
                 }
             });
+        })();
+    </script>
+
+    <!-- Show the AI send button only once there's text in the input -->
+    <script>
+        (function () {
+            const aiInput = document.getElementById('ai-input');
+            const aiSend = document.getElementById('ai-send');
+            if (aiInput && aiSend) {
+                aiInput.addEventListener('input', function () {
+                    aiSend.classList.toggle('show', aiInput.value.trim().length > 0);
+                });
+            }
         })();
     </script>
 </body>
