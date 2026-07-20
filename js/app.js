@@ -58,34 +58,6 @@ function dismissKeyboard() {
     }
 }
 
-// ── HIDE BOTTOM NAV WHILE KEYBOARD IS OPEN ──
-// السبب: #bottom-nav معمول له position:fixed;bottom:0. لما الكيبورد يفتح على الموبايل
-// (مثلاً وقت الكتابة في مربع شات الـ AI)، المتصفح/الـ WebView بيقلّص الـ viewport،
-// والعنصر الـ fixed مابيلحقش يتزبط مع الحركة دي فبيبان طايف فوق الكيبورد بدل ما يختفي وراه.
-// الحل: نخفي الناف بار بالكامل طول ما فيه input/textarea متركّز (focus)،
-// ونرجّعه تلقائيًا لما الفوكس يمشي (يعني الكيبورد اتقفل أو المستخدم دوس بعيد).
-(function () {
-    const bottomNav = document.getElementById('bottom-nav');
-    if (!bottomNav) return;
-
-    function isTextField(el) {
-        return el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
-    }
-
-    document.addEventListener('focusin', e => {
-        if (isTextField(e.target)) bottomNav.style.display = 'none';
-    });
-
-    document.addEventListener('focusout', e => {
-        if (!isTextField(e.target)) return;
-        // تأخير بسيط عشان لو الفوكس بينتقل من input لـ input تاني (تاب مثلاً)
-        // ميحصلش وميض (flicker) في الناف بار وهو بيختفي ويظهر تاني بسرعة
-        setTimeout(() => {
-            if (!isTextField(document.activeElement)) bottomNav.style.display = '';
-        }, 100);
-    });
-})();
-
 // ── UTILS
 function saveData() { if (!G.data) return; localStorage.setItem('df_local', JSON.stringify(G.data)); }
 function loadLocal() { const r = localStorage.getItem('df_local'); return r ? JSON.parse(r) : null; }
