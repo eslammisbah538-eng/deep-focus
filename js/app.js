@@ -44,6 +44,20 @@ let G = {
     chatHistory: [], navHistory: []
 };
 
+// ── KEYBOARD / FOCUS HELPERS ──
+// المشكلة الأصلية: أي input/textarea كان متركّز (focused) وقت الضغط على الناف بار
+// (سواء الشريط السفلي في الموبايل أو قائمة "المزيد") كان بيسيب الكيبورد شغال في الخلفية،
+// وبما إن #bottom-nav و #bnav-more-sheet كلاهما position:fixed، المتصفح/الـ WebView
+// كان بيحرّكهم مع الـ viewport اللي بيتقصّر بسبب الكيبورد — فيبان وكأن الكيبورد "بيطلع مع الناف بار".
+// الحل: نعمل blur لأي عنصر متركّز قبل أي عملية تنقل أو فتح قائمة، عشان الكيبورد يقفل فورًا
+// ومايكونش ليه أي علاقة بحركة عناصر التنقل.
+function dismissKeyboard() {
+    const ae = document.activeElement;
+    if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.isContentEditable)) {
+        ae.blur();
+    }
+}
+
 // ── UTILS
 function saveData() { if (!G.data) return; localStorage.setItem('df_local', JSON.stringify(G.data)); }
 function loadLocal() { const r = localStorage.getItem('df_local'); return r ? JSON.parse(r) : null; }
@@ -248,14 +262,17 @@ function updateStreak() {
 let toastTimer;
 function showToast(msg, type = '') { const el = document.getElementById('toast'); el.textContent = msg; el.className = 'toast show ' + (type || ''); clearTimeout(toastTimer); toastTimer = setTimeout(() => { el.className = 'toast'; }, 3400); }
 function openModal(title, html, footer = '') { document.getElementById('modal-title').textContent = title; document.getElementById('modal-content').innerHTML = html; document.getElementById('modal-footer').innerHTML = footer; document.getElementById('modal-overlay').classList.remove('hidden'); lucide.createIcons(); }
-function closeModal() { document.getElementById('modal-overlay').classList.add('hidden'); }
+function closeModal() { dismissKeyboard(); document.getElementById('modal-overlay').classList.add('hidden'); }
 
 // ── BOTTOM NAV MORE
-function openBnavMore() { document.getElementById('bnav-more-sheet').style.display = 'block'; }
+function openBnavMore() { dismissKeyboard(); document.getElementById('bnav-more-sheet').style.display = 'block'; }
 function closeBnavMore() { document.getElementById('bnav-more-sheet').style.display = 'none'; }
 
 // ── NAVIGATION
 function navigate(section) {
+    // اقفل الكيبورد فورًا لو كان فيه input متركّز — قبل أي تغيير في الـ DOM
+    // ده اللي بيمنع الناف بار (position:fixed) من "التفاعل" مع الكيبورد وهو بيقفل
+    dismissKeyboard();
     if (G.section && G.section !== section) { G.navHistory.push(G.section); if (G.navHistory.length > 20) G.navHistory.shift(); }
     if (G.section === 'subjects' && section !== 'subjects') stopCountdownInterval();
     if (G.section === 'insights' && section !== 'insights') { stopInsightsLiveUpdate(); }
@@ -288,7 +305,7 @@ function navigate(section) {
     }, 0);
     lucide.createIcons();
 }
-function goBack() { if (G.navHistory.length > 0) navigate(G.navHistory.pop()); else navigate('dashboard'); }
+function goBack() { dismissKeyboard(); if (G.navHistory.length > 0) navigate(G.navHistory.pop()); else navigate('dashboard'); }
 
 // Navigate to Pomodoro and pre-select a specific subject
 function navigatePomodoro(subjectId) {
@@ -765,6 +782,7 @@ function editSubject(id) {
         `<button class="btn-primary" onclick="saveEditSubject('${id}')">حفظ</button><button class="btn-ghost" onclick="closeModal()">إلغاء</button>`);
 }
 function saveEditSubject(id) {
+    dismissKeyboard();
     const s = G.data.subjects.find(x => x.id === id); if (!s) return;
     s.name = document.getElementById('edit-sub-name').value.trim() || s.name; s.examDate = document.getElementById('edit-sub-date').value || null; s.examTime = document.getElementById('edit-sub-time').value || '09:00'; s.hours = parseInt(document.getElementById('edit-sub-hours').value) || 0;
     s.color = getSubjectColor(s); // always re-derive from priority
@@ -913,7 +931,7 @@ function playBeep() { try { const ctx = new (window.AudioContext || window.webki
 
 // ── FOCUS MODE
 let focusModeActive = false;
-function enterFocusMode() { focusModeActive = true; document.getElementById('focus-mode-overlay').classList.remove('hidden'); syncFocusMode(); }
+function enterFocusMode() { dismissKeyboard(); focusModeActive = true; document.getElementById('focus-mode-overlay').classList.remove('hidden'); syncFocusMode(); }
 function exitFocusMode() { focusModeActive = false; document.getElementById('focus-mode-overlay').classList.add('hidden'); }
 function syncFocusMode() {
     if (!focusModeActive) return;
@@ -2256,10 +2274,13 @@ document.addEventListener('DOMContentLoaded', () => {
     injectDeleteAccountButton('logout-btn', 'delete-account-btn');
 
     // Bottom nav
-    document.querySelectorAll('.bnav-item[data-section]').forEach(btn => btn.addEventListener('click', () => navigate(btn.dataset.section)));
+    // dismissKeyboard() هنا مهم جداً: لو المستخدم كان بيكتب في textarea (شات AI مثلاً)
+    // وضغط زرار في الشريط السفلي مباشرة، لازم نقفل الكيبورد فورًا قبل استدعاء navigate()
+    // عشان الـ position:fixed بتاع الناف بار ميتحركش مع الـ viewport وقت قفل الكيبورد
+    document.querySelectorAll('.bnav-item[data-section]').forEach(btn => btn.addEventListener('click', () => { dismissKeyboard(); navigate(btn.dataset.section); }));
     document.getElementById('bnav-more-btn')?.addEventListener('click', openBnavMore);
     document.getElementById('bnav-more-backdrop')?.addEventListener('click', closeBnavMore);
-    document.querySelectorAll('.bnav-more-item[data-section]').forEach(btn => btn.addEventListener('click', () => navigate(btn.dataset.section)));
+    document.querySelectorAll('.bnav-more-item[data-section]').forEach(btn => btn.addEventListener('click', () => { dismissKeyboard(); navigate(btn.dataset.section); }));
     document.getElementById('bnav-theme-btn')?.addEventListener('click', () => { toggleTheme(); });
     document.getElementById('bnav-logout-btn')?.addEventListener('click', logout);
     injectDeleteAccountButton('bnav-logout-btn', 'bnav-delete-account-btn');
