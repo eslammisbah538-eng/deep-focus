@@ -697,6 +697,41 @@
 
     <script src="js/app.js"></script>
     <script src="js/onboarding.js"></script>
+
+    <!-- Hide bottom nav while a text field is focused, so it doesn't float above the keyboard -->
+    <script>
+        (function () {
+            const isMobile = () => window.matchMedia('(max-width:768px)').matches;
+            let focusedCount = 0;
+
+            function hideNav() {
+                document.getElementById('bottom-nav')?.classList.add('kb-hidden');
+            }
+            function showNav() {
+                document.getElementById('bottom-nav')?.classList.remove('kb-hidden');
+            }
+
+            document.addEventListener('focusin', function (e) {
+                if (!isMobile()) return;
+                const el = e.target;
+                if (el.matches && el.matches('input, textarea, select')) {
+                    focusedCount++;
+                    hideNav();
+                }
+            });
+
+            document.addEventListener('focusout', function (e) {
+                if (!isMobile()) return;
+                const el = e.target;
+                if (el.matches && el.matches('input, textarea, select')) {
+                    focusedCount = Math.max(0, focusedCount - 1);
+                    setTimeout(function () {
+                        if (focusedCount === 0) showNav();
+                    }, 100);
+                }
+            });
+        })();
+    </script>
 </body>
 
 </html>
