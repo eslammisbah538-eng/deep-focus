@@ -3561,6 +3561,12 @@ a {
     display: none !important;
 }
 
+/* When keyboard is open, collapse the space #content reserves for the nav
+   (padding-bottom, toast offset, etc all read this variable) */
+html.kb-open {
+    --bottom-nav: 0px;
+}
+
 /* Prevent subpixel rendering issues on Android WebView */
 body {
     -webkit-font-smoothing: antialiased;
