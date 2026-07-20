@@ -3351,7 +3351,7 @@ a {
 
     /* AI layout on mobile */
     .ai-layout {
-        height: calc(99dvh - var(--th) - var(--bottom-nav) - 29px)
+        height: calc(99dvh - var(--th) - 29px)
     }
 
     /* Dashboard body - single column */
