@@ -67,15 +67,19 @@ body.light {
 }
 
 html {
-    scroll-behavior: smooth
+    scroll-behavior: smooth;
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none
 }
 
 body {
     font-family: var(--f-b);
     background: var(--bg);
     color: var(--tx);
-    min-height: 100vh;
-    overflow-x: hidden;
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
     transition: none !important;
     -webkit-transition: none !important
 }
@@ -422,10 +426,12 @@ a {
 #app {
     display: grid;
     grid-template-columns: var(--sw) 1fr;
-    min-height: 100vh;
+    height: 100dvh;
+    height: 100vh;
     opacity: 1;
     visibility: visible;
-    transition: none !important
+    transition: none !important;
+    overflow: hidden
 }
 
 #app.collapsed {
@@ -620,7 +626,7 @@ a {
 #main {
     display: flex;
     flex-direction: column;
-    min-height: 100vh;
+    height: 100%;
     overflow: hidden
 }
 
@@ -731,6 +737,7 @@ a {
 #content {
     flex: 1;
     overflow-y: auto;
+    overscroll-behavior-y: contain;
     padding: 20px
 }
 
@@ -2630,13 +2637,15 @@ a {
 .ai-layout {
     display: flex;
     flex-direction: column;
-    height: calc(104vh - var(--th) - 1px - var(--bottom-nav));
+    height: calc(100dvh - var(--th) - 1px - var(--bottom-nav) - 40px);
+    height: calc(100vh - var(--th) - 1px - var(--bottom-nav) - 40px);
     min-height: 350px
 }
 
 .ai-chat-area {
     flex: 1;
     overflow-y: auto;
+    overscroll-behavior-y: contain;
     padding-bottom: 7px;
     scroll-behavior: smooth
 }
@@ -3416,7 +3425,8 @@ a {
 
     /* AI layout on mobile */
     .ai-layout {
-        height: calc(99dvh - var(--th) - 10px)
+        height: calc(100dvh - var(--th) - var(--bottom-nav) - 34px);
+        height: calc(100vh - var(--th) - var(--bottom-nav) - 34px)
     }
 
     /* Dashboard body - single column */
