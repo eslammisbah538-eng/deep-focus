@@ -33,11 +33,18 @@ A complete study and time-management web app — Pomodoro timer, AI-generated fl
 ## Project Structure
 
 ```
-├── index.html      # Main page structure
-├── style.css        # All styling
-├── app.js           # App logic (state, timer, AI, analytics...)
+├── index.html          # Main page structure
+├── css/
+│   └── style.css       # All styling
+├── js/
+│   ├── app.js           # Core app logic (state, timer, AI, analytics...)
+│   └── onboarding.js     # First-run onboarding/walkthrough flow
+├── images/
+│   └── preview.png       # Social share preview image (og:image / twitter:image)
 └── README.md
 ```
+
+> Load order matters: `onboarding.js` must be included **before** `app.js` in `index.html`, since `app.js` expects `window.onboardingInstance` to already be defined.
 
 ---
 
