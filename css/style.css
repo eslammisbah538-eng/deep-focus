@@ -90,6 +90,16 @@ body {
     -webkit-transition: none !important
 }
 
+/* iPhone Safari لسه معملش support لـ interactive-widget=resizes-content
+   (بعكس Chrome/Android)، فلما الكيبورد يفتح الصفحة الثابتة (position:fixed)
+   فضلة بنفس الطول الأصلي وجزء منها (زي صندوق كتابة شات الـ AI) بيختفي
+   خلف الكيبورد. الفيرايبلز دول بتتحدث بالـ JS من visualViewport،
+   والقيم الافتراضية (100% / 0px) بتخلي أي براوزر تاني يشتغل زي ما هو. */
+body {
+    top: var(--vv-top, 0px);
+    height: var(--vv-height, 100%);
+}
+
 html:not([data-boot-state]) #auth-screen,
 html:not([data-boot-state]) #app {
     display: none !important
@@ -185,61 +195,77 @@ a {
     border-radius: 3px
 }
 
+
+
 /* ── AUTH ── */
 #auth-screen {
     min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
+    padding: 24px;
     background: var(--bg);
     position: relative;
     overflow: hidden;
     opacity: 1;
     visibility: visible;
-    transition: none !important
+    transition: none !important;
+    direction: rtl;
 }
 
 #auth-screen::before {
     content: '';
     position: absolute;
     inset: 0;
-    background: radial-gradient(ellipse 100% 70% at 50% -10%, var(--pg), transparent 60%),
+    background:
+        radial-gradient(ellipse 100% 70% at 50% -10%, var(--pg), transparent 60%),
         radial-gradient(ellipse 60% 40% at 80% 80%, rgba(0, 229, 197, .06), transparent);
-    pointer-events: none
+    pointer-events: none;
 }
 
+/* ── blobs ناعمة بدل الخلفية المسطّحة ── */
 .auth-grid-bg {
     position: absolute;
-    inset: 0;
-    background-image: linear-gradient(var(--bo) 1px, transparent 1px), linear-gradient(90deg, var(--bo) 1px, transparent 1px);
-    background-size: 48px 48px;
+    inset: -10%;
     pointer-events: none;
-    opacity: .5
+    opacity: .55;
+    filter: blur(60px);
+    background:
+        radial-gradient(circle at 20% 25%, rgba(91, 138, 255, .35), transparent 42%),
+        radial-gradient(circle at 82% 20%, rgba(0, 229, 197, .28), transparent 40%),
+        radial-gradient(circle at 55% 85%, rgba(139, 92, 246, .22), transparent 45%);
+    animation: authBlobDrift 22s ease-in-out infinite alternate;
+}
+
+@keyframes authBlobDrift {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(2%, -3%) scale(1.06); }
+    100% { transform: translate(-2%, 2%) scale(1); }
 }
 
 .auth-card {
     background: var(--s);
     border: 1px solid var(--bo2);
     border-radius: 24px;
-    padding: 40px 36px;
-    width: min(460px, 94vw);
+    padding: 44px 38px;
+    width: min(520px, 94vw);
     position: relative;
     z-index: 1;
-    box-shadow: var(--shl), inset 0 1px 0 rgba(255, 255, 255, .08)
+    box-shadow: var(--shl), 0 30px 90px -20px rgba(0, 0, 0, .5), inset 0 1px 0 rgba(255, 255, 255, .08);
 }
 
-/* Only apply glass effect on desktop where it's supported properly */
-@media(min-width:769px) {
+@media (min-width: 769px) {
     .auth-card {
         background: var(--glass);
-        -webkit-backdrop-filter: blur(20px);
-        backdrop-filter: blur(20px)
+        -webkit-backdrop-filter: blur(24px) saturate(140%);
+        backdrop-filter: blur(24px) saturate(140%);
+        box-shadow: var(--shl), 0 40px 100px -24px rgba(0, 0, 0, .55), inset 0 1px 0 rgba(255, 255, 255, .1), 0 0 0 1px rgba(91, 138, 255, .08);
     }
 }
 
 .auth-logo {
     text-align: center;
-    margin-bottom: 22px
+    margin-bottom: 24px;
 }
 
 .auth-bolt {
@@ -252,12 +278,29 @@ a {
     justify-content: center;
     margin: 0 auto 14px;
     box-shadow: 0 8px 32px rgba(91, 138, 255, .4);
-    color: #fff
+    color: #fff;
+    position: relative;
+}
+
+.auth-bolt::before {
+    content: '';
+    position: absolute;
+    inset: -14px;
+    border-radius: 26px;
+    background: radial-gradient(circle, rgba(91, 138, 255, .45), transparent 70%);
+    filter: blur(14px);
+    z-index: -1;
+    animation: boltGlow 2.6s ease-in-out infinite;
+}
+
+@keyframes boltGlow {
+    0%, 100% { opacity: .55; }
+    50% { opacity: 1; }
 }
 
 .auth-bolt svg {
     width: 28px;
-    height: 28px
+    height: 28px;
 }
 
 .auth-logo h1 {
@@ -265,69 +308,132 @@ a {
     font-weight: 900;
     color: var(--tx);
     letter-spacing: -1px;
-    margin-bottom: 5px
+    line-height: 1.05;
+    margin-bottom: 6px;
 }
 
 .auth-logo p {
     color: var(--tm);
-    font-size: .88rem
+    font-size: .95rem;
 }
 
 .auth-logo-glow {
     color: var(--p);
-    font-weight: 800
+    font-weight: 800;
+}
+
+.auth-form-group {
+    margin-bottom: 26px;
 }
 
 .auth-label {
     display: block;
-    font-size: .8rem;
+    font-size: .82rem;
     color: var(--tm);
-    margin-bottom: 6px;
-    font-weight: 600;
-    letter-spacing: .02em
+    margin-bottom: 8px;
+    font-weight: 700;
+    letter-spacing: .02em;
 }
 
-.auth-form-group {
-    margin-bottom: 16px
+.auth-name-hint {
+    margin-top: 8px;
+    color: var(--tm);
+    font-size: .75rem;
+    line-height: 1.5;
+}
+
+#entry-name {
+    text-align: right;
+    direction: rtl;
+    padding-right: 42px;
+}
+
+#entry-name::placeholder {
+    color: var(--tm);
+    opacity: .95;
+}
+
+.auth-input-wrap {
+    position: relative;
+}
+
+.auth-input-icon {
+    position: absolute;
+    top: 50%;
+    right: 14px;
+    transform: translateY(-50%);
+    width: 17px;
+    height: 17px;
+    color: var(--tm);
+    pointer-events: none;
 }
 
 .avatar-picker {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-    margin-top: 4px
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-top: 4px;
 }
 
 .av-opt {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: 14px;
     cursor: pointer;
-    border: 3px solid transparent;
-    transition: all .2s;
+    border: 1.5px solid var(--bo);
+    background: var(--s2);
+    transition: transform .2s cubic-bezier(.34, 1.56, .64, 1), box-shadow .22s ease, border-color .22s ease, background .22s ease;
+    position: relative;
+    outline: none;
+}
+
+.av-opt-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 11px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: 800;
-    font-size: .9rem;
-    color: #fff
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.av-opt-icon svg {
+    width: 22px;
+    height: 22px;
+}
+
+.av-opt-label {
+    font-size: .86rem;
+    font-weight: 700;
+    color: var(--tx);
 }
 
 .av-opt.selected {
-    border-color: var(--tx);
-    transform: scale(1.15);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, .4)
+    border-color: var(--av-color);
+    background: var(--s3);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--av-color) 20%, transparent);
+    transform: translateY(-1px);
 }
 
 .av-opt:hover:not(.selected) {
-    transform: scale(1.1)
+    border-color: var(--bo2);
+    transform: translateY(-1px);
+}
+
+.av-opt:focus-visible {
+    box-shadow: 0 0 0 3px rgba(91, 138, 255, .35);
 }
 
 .btn-enter {
     width: 100%;
-    background: linear-gradient(135deg, var(--p), var(--pd));
+    background: linear-gradient(135deg, var(--p), var(--ac));
+    background-size: 160% 160%;
     color: #fff;
     padding: 14px;
+    min-height: 54px;
     border-radius: var(--rs);
     font-weight: 800;
     font-size: 1rem;
@@ -336,19 +442,59 @@ a {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px
+    gap: 8px;
+    transition: transform .2s ease, box-shadow .2s ease, background-position .4s ease;
 }
 
 .btn-enter:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 28px rgba(91, 138, 255, .5)
+    box-shadow: 0 10px 32px rgba(91, 138, 255, .55), 0 0 0 1px rgba(0, 229, 197, .25);
+    background-position: 100% 0;
 }
 
 .btn-enter:active {
     transform: translateY(0)
 }
 
+.auth-error {
+    margin-top: 12px;
+    padding: 10px 14px;
+    background: rgba(255, 92, 92, .1);
+    border: 1px solid var(--er);
+    border-radius: var(--rs);
+    color: var(--er);
+    font-size: .82rem;
+    text-align: center;
+    display: none;
+}
+
+@media (max-width: 480px) {
+    #auth-screen {
+        padding: 16px;
+    }
+
+    .auth-card {
+        padding: 34px 20px;
+        border-radius: 20px;
+    }
+
+    .auth-logo h1 {
+        font-size: 1.7rem;
+    }
+
+    .auth-bolt {
+        width: 58px;
+        height: 58px;
+    }
+
+    .auth-bolt svg {
+        width: 24px;
+        height: 24px;
+    }
+}
+
 /* ── BUTTONS ── */
+
 .btn-primary {
     background: var(--p);
     color: #fff;
@@ -729,6 +875,11 @@ a {
     border: 2px solid rgba(255, 255, 255, .2);
 }
 
+.user-av svg {
+    width: 20px;
+    height: 20px;
+}
+
 #user-nm {
     font-weight: 700;
     font-size: .84rem;
@@ -799,7 +950,7 @@ a {
 }
 
 .bnav-item span {
-    font-size: .62rem;
+    font-size: .72rem;
     font-weight: 700;
     white-space: nowrap
 }
@@ -1018,18 +1169,6 @@ a {
     box-shadow: var(--sh);
     position: relative;
     overflow: hidden
-}
-
-.stat-card::after {
-    content: '';
-    position: absolute;
-    top: -20px;
-    left: -20px;
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    background: var(--accent-color, var(--p));
-    opacity: .06
 }
 
 .stat-card::before {
@@ -1301,18 +1440,6 @@ a {
     right: 0;
     height: 3px;
     background: var(--ecc-color, var(--p))
-}
-
-.exam-countdown-card::after {
-    content: '';
-    position: absolute;
-    top: -30px;
-    right: -30px;
-    width: 120px;
-    height: 120px;
-    border-radius: 50%;
-    background: var(--ecc-color, var(--p));
-    opacity: .05
 }
 
 .ecc-label {
@@ -1752,8 +1879,11 @@ a {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 14px;
-    padding: 14px
+    justify-content: center;
+    gap: 22px;
+    padding: 24px;
+    flex: 1;
+    min-height: calc(100vh - 200px)
 }
 
 .pomo-modes {
@@ -1789,13 +1919,13 @@ a {
 
 .pomo-timer-wrap {
     position: relative;
-    width: 200px;
-    height: 200px
+    width: 280px;
+    height: 280px
 }
 
 .pomo-svg {
-    width: 200px;
-    height: 200px;
+    width: 280px;
+    height: 280px;
     position: absolute;
     top: 0;
     right: 0
@@ -1812,7 +1942,7 @@ a {
 
 #pomo-time {
     font-family: var(--f-h);
-    font-size: 2.6rem;
+    font-size: 3.2rem;
     font-weight: 900;
     color: var(--tx)
 }
@@ -2756,7 +2886,7 @@ a {
 .ai-input-pill {
     flex: 1;
     display: flex;
-    align-items: flex-end;
+    align-items: center;
     gap: 6px;
     background: var(--s2);
     border: 1px solid var(--bo2);
@@ -2796,16 +2926,26 @@ a {
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    opacity: 0;
-    transform: scale(.6);
-    pointer-events: none;
-    transition: opacity .18s ease, transform .18s ease
+    opacity: 0.3;
+    transform: scale(1);
+    transition: opacity .18s ease;
+    cursor: not-allowed
 }
 
-#ai-send.show {
+#ai-send:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    pointer-events: none
+}
+
+#ai-send:not(:disabled) {
     opacity: 1;
-    transform: scale(1);
+    cursor: pointer;
     pointer-events: auto
+}
+
+#ai-send:not(:disabled):hover {
+    opacity: 0.8
 }
 
 #ai-send svg {
@@ -3446,6 +3586,25 @@ a {
         grid-template-columns: 1fr
     }
 
+    .pomo-timer-wrap {
+        width: 220px;
+        height: 220px
+    }
+
+    .pomo-svg {
+        width: 220px;
+        height: 220px
+    }
+
+    #pomo-time {
+        font-size: 2.4rem
+    }
+
+    .pomo-main {
+        min-height: auto;
+        padding: 16px
+    }
+
     /* Flashcards - single column, sidebar on top */
     .fc-layout {
         grid-template-columns: 1fr
@@ -3587,6 +3746,20 @@ a {
     .pomo-mode-btn {
         padding: 7px 10px;
         font-size: .74rem
+    }
+
+    .pomo-timer-wrap {
+        width: 180px;
+        height: 180px
+    }
+
+    .pomo-svg {
+        width: 180px;
+        height: 180px
+    }
+
+    #pomo-time {
+        font-size: 2rem
     }
 
     .fc-review-actions {
