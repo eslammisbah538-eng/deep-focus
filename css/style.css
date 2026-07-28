@@ -186,15 +186,19 @@ a {
     color: inherit
 }
 
-::-webkit-scrollbar {
-    width: 4px
+/* إخفاء الـ Scrollbar مع بقاء التمرير */
+html,
+body {
+  overflow-y: auto;
+  scrollbar-width: none;      /* Firefox */
+  -ms-overflow-style: none;   /* IE و Edge القديم */
 }
 
-::-webkit-scrollbar-thumb {
-    background: var(--td);
-    border-radius: 3px
+/* Chrome, Edge, Safari */
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  display: none;
 }
-
 
 
 /* ── AUTH ── */
