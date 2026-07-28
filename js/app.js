@@ -4,11 +4,25 @@
             const html = document.documentElement;
             let kbOpen = false;
 
+            /* Scrolls the AI chat messages area (the actual scrollable
+               container) to its bottom edge, so the fixed input bar below
+               it is fully clear of the keyboard. Scrolling #ai-input itself
+               does nothing — it isn't inside a scrollable ancestor. */
+            function scrollAiChatToBottom() {
+                const chatArea = document.querySelector('.ai-chat-area');
+                if (chatArea) chatArea.scrollTop = chatArea.scrollHeight;
+            }
+
             function setKb(open) {
                 if (open === kbOpen) return;
                 kbOpen = open;
                 html.classList.toggle('kb-open', open);
                 document.getElementById('bottom-nav')?.classList.toggle('kb-hidden', open);
+                if (open) {
+                    /* Keyboard just opened: give it a beat to finish animating,
+                       then force the chat area down so the input bar isn't clipped. */
+                    setTimeout(scrollAiChatToBottom, 300);
+                }
             }
 
             /* Primary detection: visualViewport shrinks reliably when the
@@ -50,17 +64,6 @@
                     setTimeout(function () { setKb(false); }, 100);
                 }
             });
-
-            /* Safety net: force #ai-input into view on focus, regardless of
-               whether the visualViewport resize event fired or not. */
-            const aiInputEl = document.getElementById('ai-input');
-            if (aiInputEl) {
-                aiInputEl.addEventListener('focus', function () {
-                    setTimeout(function () {
-                        aiInputEl.scrollIntoView({ block: 'end', behavior: 'smooth' });
-                    }, 300); // بعد ما أنيميشن الكيبورد يخلص تقريباً
-                });
-            }
         })();
 
 /* -- إظهار زرار إرسال شات الـ AI بس لما فيه نص مكتوب -- */
