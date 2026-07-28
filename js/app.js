@@ -1820,12 +1820,6 @@ function renderAIHelp() {
     }
 }
 function scrollChat() { const area = document.getElementById('ai-chat-area'); if (area) area.scrollTop = area.scrollHeight; }
-// بيرفع رسالة المستخدم الجديدة لأعلى منطقة الشات (زي ChatGPT بالظبط) — يخفي المحادثة اللي فاتت بدل ما تفضل ظاهرة كلها
-function scrollToUserMsg(uid) {
-    const area = document.getElementById('ai-chat-area');
-    const el = document.getElementById(uid);
-    if (area && el) area.scrollTop = el.offsetTop - 6;
-}
 function clearAIChat() {
     if (!confirm('مسح المحادثة؟')) return;
     G.chatHistory = [];
@@ -2001,13 +1995,11 @@ async function sendAIMessage(text) {
     const msgs = document.getElementById('ai-messages');
     G.chatHistory.push({ role: 'user', content: text });
     const userAt = AVATAR_TYPES[G.data.avatarType] || AVATAR_TYPES.boy;
-    const uid = 'u' + Date.now();
-    msgs.innerHTML += `<div class="ai-msg user" id="${uid}"><div class="ai-msg-av" style="background:${userAt.color};color:#fff">${userAt.icon}</div><div class="ai-msg-bubble" style="direction:rtl;unicode-bidi:plaintext;text-align:right">${text.replace(/</g, '&lt;')}</div></div>`;
-    // بمجرد ما المستخدم يبعت، الرسالة الجديدة بترتفع لأعلى الشات والمحادثة القديمة بتختفي فوقها (زي أي شات تاني)
-    requestAnimationFrame(() => scrollToUserMsg(uid));
+    msgs.innerHTML += `<div class="ai-msg user"><div class="ai-msg-av" style="background:${userAt.color};color:#fff">${userAt.icon}</div><div class="ai-msg-bubble" style="direction:rtl;unicode-bidi:plaintext;text-align:right">${text.replace(/</g, '&lt;')}</div></div>`;
+    requestAnimationFrame(scrollChat);
     const tid = 't' + Date.now();
     msgs.innerHTML += `<div class="ai-msg" id="${tid}"><div class="ai-msg-av" style="background:linear-gradient(135deg,var(--p),var(--ac))"><i data-lucide="bot" style="color:#fff"></i></div><div class="ai-msg-bubble"><div class="ai-typing"><span></span><span></span><span></span></div></div></div>`;
-    lucide.createIcons(); requestAnimationFrame(() => scrollToUserMsg(uid));
+    lucide.createIcons(); requestAnimationFrame(scrollChat);
     const sendBtn = document.getElementById('ai-send'); if (sendBtn) sendBtn.disabled = true;
     try {
         const r = await fetch('https://deep-focus-v2.eslammisbah538.workers.dev/api/ai/chat', {
@@ -2025,9 +2017,7 @@ async function sendAIMessage(text) {
         document.getElementById(tid)?.remove();
         msgs.innerHTML += `<div class="ai-msg"><div class="ai-msg-av"><i data-lucide="bot"></i></div><div class="ai-msg-bubble" style="color:var(--er)">⚠ تأكد من الاتصال وحاول مرة تانية</div></div>`;
     }
-    if (sendBtn) sendBtn.disabled = false;
-    // نفضل مثبتين على بداية آخر سؤال، مش نرجع نطلع كل المحادثة القديمة
-    requestAnimationFrame(() => scrollToUserMsg(uid));
+    if (sendBtn) sendBtn.disabled = false; requestAnimationFrame(scrollChat);
 }
 
 // ── INSIGHTS — تقرير الأداء
