@@ -970,6 +970,7 @@ function handlePomoDurInput(fieldId) {
     const mins = Math.max(1, d[mode] || 1);
     G.pomo.timeLeft = mins * 60;
     G.pomo.fullDuration = G.pomo.timeLeft;
+    G.pomo._accumulatedElapsed = 0;
     G.pomo._subjectStartTimeLeft = G.pomo.timeLeft;
     updatePomoUI();
     syncFocusMode();
@@ -986,7 +987,11 @@ function updatePomoUI() {
 }
 function startPomo() {
     if (G.pomo.running) {
-        // PAUSE: أوقف العداد فقط، لا يُحفظ شيء
+        // PAUSE: أوقف العداد، واحفظ الوقت اللي فات لحد دلوقتي في الرصيد التراكمي
+        // (عشان لو استأنفنا بعدين، الوقت ده مايضيعش من الحساب النهائي)
+        G.pomo._accumulatedElapsed = (G.pomo._accumulatedElapsed || 0) +
+            ((G.pomo._subjectStartTimeLeft ?? G.pomo.fullDuration) - G.pomo.timeLeft);
+        G.pomo._subjectStartTimeLeft = G.pomo.timeLeft;
         clearInterval(G.pomo.timer);
         G.pomo.running = false;
         const ps = document.getElementById('pomo-start');
@@ -994,10 +999,12 @@ function startPomo() {
         syncFocusMode();
         return;
     }
-    // Initialize subject tracking on fresh start
+    // RESUME أو بداية جديدة: منصفّرش الرصيد التراكمي هنا، فلو كانت الجلسة متوقفة
+    // (Pause) الوقت اللي اتجمّع قبل كده فضل محفوظ. التصفير الحقيقي بيحصل بس في
+    // resetPomo() / pomoDone() / handlePomoSubjectChange() لما تبدأ فعلاً جلسة/مادة جديدة.
     const curSubId = document.getElementById('pomo-subject-sel')?.value || '';
-    G.pomo._currentSubjectId = curSubId;
-    G.pomo._subjectStartTimeLeft = G.pomo.timeLeft;
+    if (G.pomo._currentSubjectId === undefined) G.pomo._currentSubjectId = curSubId;
+    if (G.pomo._subjectStartTimeLeft === undefined) G.pomo._subjectStartTimeLeft = G.pomo.timeLeft;
 
     G.pomo.running = true;
     const ps = document.getElementById('pomo-start');
@@ -1013,10 +1020,9 @@ function startPomo() {
 function resetPomo() {
     // حفظ الوقت المنجز فعلاً لو كانت جلسة تركيز وفيها >= دقيقة
     if (G.pomo.mode === 'focus') {
-        // Use subject-switch-aware elapsed: only count since last subject switch
-        const elapsedSecs = G.pomo._subjectStartTimeLeft !== undefined
-            ? (G.pomo._subjectStartTimeLeft - G.pomo.timeLeft)
-            : (G.pomo.fullDuration - G.pomo.timeLeft);
+        // الوقت المنجز = أي وقت اتجمّع قبل أي Pause سابق + الوقت من آخر استئناف لحد دلوقتي
+        const elapsedSecs = (G.pomo._accumulatedElapsed || 0) +
+            ((G.pomo._subjectStartTimeLeft ?? G.pomo.fullDuration) - G.pomo.timeLeft);
         const elapsedMins = Math.floor(elapsedSecs / 60);
         if (elapsedMins >= 1) {
             const subId = document.getElementById('pomo-subject-sel')?.value;
@@ -1033,12 +1039,13 @@ function resetPomo() {
     const d = getDurations();
     G.pomo.timeLeft = d[G.pomo.mode] * 60;
     G.pomo.fullDuration = G.pomo.timeLeft;
-    // Reset subject tracking
+    // Reset subject tracking (جلسة جديدة تمامًا، فالرصيد التراكمي بيرجع صفر)
+    G.pomo._accumulatedElapsed = 0;
     G.pomo._subjectStartTimeLeft = G.pomo.timeLeft;
     G.pomo._currentSubjectId = document.getElementById('pomo-subject-sel')?.value || '';
     updatePomoUI();
 }
-function setPomoMode(mode) { if (G.pomo.running) { G.pomo._nextMode = mode; document.querySelectorAll('.pomo-mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode)); return; } clearInterval(G.pomo.timer); G.pomo.running = false; const ps = document.getElementById('pomo-start'); if (ps) { ps.innerHTML = '<i data-lucide="play"></i> ابدأ'; lucide.createIcons(); } G.pomo.mode = mode; const d = getDurations(); G.pomo.timeLeft = d[mode] * 60; G.pomo.fullDuration = G.pomo.timeLeft; document.querySelectorAll('.pomo-mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode)); updatePomoUI(); }
+function setPomoMode(mode) { if (G.pomo.running) { G.pomo._nextMode = mode; document.querySelectorAll('.pomo-mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode)); return; } clearInterval(G.pomo.timer); G.pomo.running = false; const ps = document.getElementById('pomo-start'); if (ps) { ps.innerHTML = '<i data-lucide="play"></i> ابدأ'; lucide.createIcons(); } G.pomo.mode = mode; const d = getDurations(); G.pomo.timeLeft = d[mode] * 60; G.pomo.fullDuration = G.pomo.timeLeft; G.pomo._accumulatedElapsed = 0; G.pomo._subjectStartTimeLeft = G.pomo.timeLeft; document.querySelectorAll('.pomo-mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode)); updatePomoUI(); }
 function pomoDone() {
     const mode = G.pomo.mode; const subId = document.getElementById('pomo-subject-sel')?.value; const d = getDurations(); const dur = d[mode];
     const snd = document.getElementById('pomo-sound'); if (snd?.checked) playBeep();
@@ -1046,10 +1053,10 @@ function pomoDone() {
     if (mode === 'focus') {
         // الوقت المنقضي منذ آخر تبديل مادة (أو من بداية الجلسة لو معملش تبديل) — مش مدة الجلسة كاملة
         // عشان لو المستخدم بدّل المادة في النص، الوقت اللي قبل التبديل يكون اتسجل بالفعل
-        // عن طريق handlePomoSubjectChange() ومايتكررش هنا مرة ثانية للمادة الحالية
-        const elapsedSecs = G.pomo._subjectStartTimeLeft !== undefined
-            ? (G.pomo._subjectStartTimeLeft - G.pomo.timeLeft)
-            : (G.pomo.fullDuration - G.pomo.timeLeft);
+        // عن طريق handlePomoSubjectChange() ومايتكررش هنا مرة ثانية للمادة الحالية.
+        // كمان بيشمل أي وقت اتجمّع في الرصيد التراكمي بسبب Pause/Resume في نفس الجلسة.
+        const elapsedSecs = (G.pomo._accumulatedElapsed || 0) +
+            ((G.pomo._subjectStartTimeLeft ?? G.pomo.fullDuration) - G.pomo.timeLeft);
         const sessionDur = Math.max(0, Math.floor(elapsedSecs / 60));
         if (sessionDur >= 1) {
             const session = { id: uid(), subjectId: subId, date: today(), duration: sessionDur, type: 'pomo', ts: Date.now() };
@@ -1065,6 +1072,7 @@ function pomoDone() {
 
     // Reset subject tracking for next session
     const nextMode = G.pomo._nextMode || (mode === 'focus' ? (G.pomo.sessions % 4 === 0 ? 'long' : 'short') : 'focus'); G.pomo._nextMode = null; G.pomo.mode = nextMode; G.pomo.timeLeft = d[nextMode] * 60; G.pomo.fullDuration = G.pomo.timeLeft;
+    G.pomo._accumulatedElapsed = 0;
     G.pomo._subjectStartTimeLeft = G.pomo.timeLeft;
     // Keep _currentSubjectId as the current selection for next session
     document.querySelectorAll('.pomo-mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === nextMode)); updatePomoUI();
@@ -2326,10 +2334,11 @@ function handlePomoSubjectChange(newSubId) {
     const oldSubId = G.pomo._currentSubjectId !== undefined ? G.pomo._currentSubjectId : (document.getElementById('pomo-subject-sel')?.value || '');
     if (oldSubId === newSubId) return;
 
-    if (G.pomo.running && G.pomo.mode === 'focus') {
-        const elapsedSecs = G.pomo._subjectStartTimeLeft !== undefined
-            ? (G.pomo._subjectStartTimeLeft - G.pomo.timeLeft)
-            : (G.pomo.fullDuration - G.pomo.timeLeft);
+    if (G.pomo.mode === 'focus') {
+        // بنحسب الوقت المنجز للمادة القديمة حتى لو الموقّت متوقف (Paused) دلوقتي،
+        // بما إن الرصيد التراكمي بيحمل أي وقت فات قبل آخر Pause
+        const elapsedSecs = (G.pomo._accumulatedElapsed || 0) +
+            ((G.pomo._subjectStartTimeLeft ?? G.pomo.fullDuration) - G.pomo.timeLeft);
         const elapsedMins = Math.floor(elapsedSecs / 60);
         if (elapsedMins >= 1) {
             G.data.sessions.push({
@@ -2344,7 +2353,8 @@ function handlePomoSubjectChange(newSubId) {
             showToast('✓ حُفظ ' + formatStudyDuration(elapsedMins) + ' لـ' + oldName);
         }
     }
-    // Reset tracking for new subject
+    // Reset tracking for new subject (رصيد جديد يبدأ من صفر للمادة الجديدة)
+    G.pomo._accumulatedElapsed = 0;
     G.pomo._subjectStartTimeLeft = G.pomo.timeLeft;
     G.pomo._currentSubjectId = newSubId;
 }
