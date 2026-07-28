@@ -275,13 +275,13 @@ body::-webkit-scrollbar {
 .auth-bolt {
     width: 64px;
     height: 64px;
-    background: linear-gradient(135deg, var(--p), var(--ac));
+    background: linear-gradient(135deg, #1a3691, #2463d6);
     border-radius: 18px;
     display: flex;
     align-items: center;
     justify-content: center;
     margin: 0 auto 14px;
-    box-shadow: 0 8px 32px rgba(91, 138, 255, .4);
+    box-shadow: 0 8px 32px rgba(36, 99, 214, .4);
     color: #fff;
     position: relative;
 }
@@ -291,7 +291,7 @@ body::-webkit-scrollbar {
     position: absolute;
     inset: -14px;
     border-radius: 26px;
-    background: radial-gradient(circle, rgba(91, 138, 255, .45), transparent 70%);
+    background: radial-gradient(circle, rgba(36, 99, 214, .45), transparent 70%);
     filter: blur(14px);
     z-index: -1;
     animation: boltGlow 2.6s ease-in-out infinite;
@@ -621,7 +621,7 @@ body::-webkit-scrollbar {
 .sb-icon {
     width: 34px;
     height: 34px;
-    background: linear-gradient(135deg, var(--p), var(--ac));
+    background: linear-gradient(135deg, #1a3691, #2463d6);
     border-radius: 10px;
     display: flex;
     align-items: center;
@@ -2837,12 +2837,12 @@ body::-webkit-scrollbar {
     width: 62px;
     height: 62px;
     border-radius: 18px;
-    background: linear-gradient(135deg, var(--p), var(--ac));
+    background: linear-gradient(135deg, #1a3691, #2463d6);
     display: flex;
     align-items: center;
     justify-content: center;
     margin: 0 auto 12px;
-    box-shadow: 0 6px 24px rgba(91, 138, 255, .35)
+    box-shadow: 0 6px 24px rgba(36, 99, 214, .35)
 }
 
 .ai-avatar-lg-wrap svg {
