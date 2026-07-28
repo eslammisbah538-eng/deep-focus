@@ -50,6 +50,17 @@
                     setTimeout(function () { setKb(false); }, 100);
                 }
             });
+
+            /* Safety net: force #ai-input into view on focus, regardless of
+               whether the visualViewport resize event fired or not. */
+            const aiInputEl = document.getElementById('ai-input');
+            if (aiInputEl) {
+                aiInputEl.addEventListener('focus', function () {
+                    setTimeout(function () {
+                        aiInputEl.scrollIntoView({ block: 'end', behavior: 'smooth' });
+                    }, 300); // بعد ما أنيميشن الكيبورد يخلص تقريباً
+                });
+            }
         })();
 
 /* -- إظهار زرار إرسال شات الـ AI بس لما فيه نص مكتوب -- */
