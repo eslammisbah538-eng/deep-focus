@@ -2476,21 +2476,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('ai-send')?.addEventListener('click', () => sendAIMessage(''));
     document.getElementById('ai-input')?.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendAIMessage(''); } });
 
-    // Fallback لبعض الـ WebViews المدمجة (واتساب/انستجرام/تليجرام إلخ) اللي
-    // أحيانًا بتتأخر أو مابتطلقش resize event بتاع visualViewport بسرعة كافية
-    // لما الكيبورد يفتح. بنعمل polling سريع (كل 100ms لمدة نص ثانية) مباشرة
-    // بعد الـ focus عشان نجبر تحديث --vv-height/--vv-top بدري.
-    document.getElementById('ai-input')?.addEventListener('focus', function () {
-        if (!window.visualViewport) return;
-        let tries = 0;
-        const iv = setInterval(() => {
-            const vv = window.visualViewport;
-            document.documentElement.style.setProperty('--vv-height', vv.height + 'px');
-            document.documentElement.style.setProperty('--vv-top', vv.offsetTop + 'px');
-            if (++tries >= 5) clearInterval(iv);
-        }, 100);
-    });
-
     updatePomoUI(); exitReview();
     lucide.createIcons();
 });
