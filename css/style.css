@@ -604,8 +604,14 @@ body::-webkit-scrollbar {
     top: 0;
     overflow-y: auto;
     overflow-x: hidden;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
     transition: all .25s ease;
     z-index: 100
+}
+
+#sidebar::-webkit-scrollbar {
+    display: none;
 }
 
 .sb-header {
@@ -898,7 +904,13 @@ body::-webkit-scrollbar {
     flex: 1;
     overflow-y: auto;
     overscroll-behavior-y: contain;
+    scrollbar-width: none;      /* Firefox */
+    -ms-overflow-style: none;   /* IE و Edge القديم */
     padding: 20px
+}
+
+#content::-webkit-scrollbar {
+    display: none;   /* Chrome, Edge, Safari */
 }
 
 /* SECTIONS */
