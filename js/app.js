@@ -2006,7 +2006,7 @@ async function sendAIMessage(text) {
     msgs.innerHTML += `<div class="ai-msg user"><div class="ai-msg-av" style="background:${userAt.color};color:#fff">${userAt.icon}</div><div class="ai-msg-bubble" style="direction:rtl;unicode-bidi:plaintext;text-align:right">${text.replace(/</g, '&lt;')}</div></div>`;
     requestAnimationFrame(scrollChat);
     const tid = 't' + Date.now();
-    msgs.innerHTML += `<div class="ai-msg" id="${tid}"><div class="ai-msg-av" style="background:linear-gradient(135deg,var(--p),var(--ac))"><i data-lucide="bot" style="color:#fff"></i></div><div class="ai-msg-bubble"><div class="ai-typing"><span></span><span></span><span></span></div></div></div>`;
+    msgs.innerHTML += `<div class="ai-msg" id="${tid}"><div class="ai-msg-av" style="background:linear-gradient(135deg,#1a3691,#2463d6)"><i data-lucide="bot" style="color:#fff"></i></div><div class="ai-msg-bubble"><div class="ai-typing"><span></span><span></span><span></span></div></div></div>`;
     lucide.createIcons(); requestAnimationFrame(scrollChat);
     const sendBtn = document.getElementById('ai-send'); if (sendBtn) sendBtn.disabled = true;
     try {
@@ -2019,7 +2019,7 @@ async function sendAIMessage(text) {
         G.chatHistory.push({ role: 'assistant', content: reply });
         document.getElementById(tid)?.remove();
         const formatted = formatAIReply(reply);
-        msgs.innerHTML += `<div class="ai-msg" style="animation:msgIn .25s ease"><div class="ai-msg-av" style="background:linear-gradient(135deg,var(--p),var(--ac))"><i data-lucide="bot" style="color:#fff"></i></div><div class="ai-msg-bubble" style="max-width:80%;direction:rtl;unicode-bidi:plaintext;text-align:right">${formatted}</div></div>`;
+        msgs.innerHTML += `<div class="ai-msg" style="animation:msgIn .25s ease"><div class="ai-msg-av" style="background:linear-gradient(135deg,#1a3691,#2463d6)"><i data-lucide="bot" style="color:#fff"></i></div><div class="ai-msg-bubble" style="max-width:80%;direction:rtl;unicode-bidi:plaintext;text-align:right">${formatted}</div></div>`;
         lucide.createIcons();
     } catch (e) {
         document.getElementById(tid)?.remove();
