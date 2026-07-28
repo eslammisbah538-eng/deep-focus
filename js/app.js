@@ -1,4 +1,3 @@
-
 /* -- إخفاء الـ bottom nav لما الكيبورد يفتح (موبايل) -- */
         (function () {
             const isMobile = () => window.matchMedia('(max-width:768px)').matches;
@@ -84,7 +83,7 @@ const PRIORITY_COLORS = {
     done: 'transparent', // بلا لون — انتهى
 };
 function getSubjectColor(subject) {
-    const p = getPriority(subject.examDate);
+    const p = getPriority(subject);
     if (p === 'done') return 'transparent';
     return PRIORITY_COLORS[p] || PRIORITY_COLORS.low;
 }
@@ -173,7 +172,19 @@ function formatStudyDurationAr(minutes) {
 }
 
 function daysUntil(d) { if (!d) return null; return Math.ceil((new Date(d).setHours(0, 0, 0, 0) - new Date().setHours(0, 0, 0, 0)) / 86400000); }
-function getPriority(d) { const n = daysUntil(d); if (n === null) return 'low'; if (n < 0) return 'done'; if (n <= 3) return 'critical'; if (n <= 7) return 'high'; if (n <= 14) return 'medium'; return 'low'; }
+// مصدر واحد لتحديد الأولوية/اللون: بيستخدم نفس حساب getExamMsLeft بدقة الساعة (مش فرق تاريخ بس)
+// عشان يتطابق مع العداد التنازلي والأرشفة وتقرير الأداء، بدل ما يديك رقم مختلف بيوم في الحالات الحدّية.
+function getPriority(subject) {
+    if (!subject || !subject.examDate) return 'low';
+    const ms = getExamMsLeft(subject);
+    if (ms === null) return 'low';
+    if (ms < 0) return 'done';
+    const n = Math.floor(ms / 86400000);
+    if (n <= 3) return 'critical';
+    if (n <= 7) return 'high';
+    if (n <= 14) return 'medium';
+    return 'low';
+}
 
 // ── AVATAR PICKER
 function buildAvatarPicker() {
@@ -312,7 +323,7 @@ function startApp(data, isNewAccount) {
     applyTheme(G.theme); updateTopbar(); updateStreak(); navigate('dashboard'); updateFCBadge();
     checkAutoShowWrapped();
     // أرشفة تلقائية صامتة عند الدخول (silent=true لتفادي تعدد التوست مع navigate)
-    setTimeout(() => autoArchivePastExams(false), 600);
+    setTimeout(() => autoArchivePastExams(true), 600);
     // تشغيل الـ onboarding فقط عند تسجيل حساب جديد فعلاً — لا يظهر مع تسجيل الدخول التلقائي للعائدين
     if (isNewAccount && onboardingInstance && onboardingInstance.shouldShow()) {
         setTimeout(() => onboardingInstance.init(), 800);
@@ -459,7 +470,7 @@ function renderDashboard() {
         : `<div class="stat-val">${formatStudyDuration(todayMin)}</div>`;
     document.getElementById('dash-stats').innerHTML =
         `<div class="stat-card"><span class="stat-icon"><i data-lucide="flame"></i></span><div class="stat-val">${G.data.streak.count}</div><div class="stat-label">يوم متتالي</div></div>` +
-        `<div class="stat-card"><span class="stat-icon"><i data-lucide="book-open"></i></span><div class="stat-val">${G.data.subjects.filter(s => !s.done && !s.archived).length}</div><div class="stat-label">مادة نشطة</div></div>` +
+        `<div class="stat-card"><span class="stat-icon"><i data-lucide="book-open"></i></span><div class="stat-val">${G.data.subjects.filter(s => !s.archived).length}</div><div class="stat-label">مادة نشطة</div></div>` +
         `<div class="stat-card"><span class="stat-icon"><i data-lucide="timer"></i></span>${todayHtml}<div class="stat-label">اليوم</div></div>` +
         `<div class="stat-card"><span class="stat-icon"><i data-lucide="layers"></i></span><div class="stat-val">${dueCards}</div><div class="stat-label">بطاقات للمراجعة</div></div>`;
     lucide.createIcons();
@@ -475,7 +486,12 @@ let eccState = { idx: 0, interval: null, alertsShown: new Set() };
 
 function getUpcomingExamSubjects() {
     return G.data.subjects
-        .filter(s => !s.archived && !s.done && s.examDate)
+        // ملحوظة: هنا عمدًا مش بنفلتر !s.archived — المادة الوحيدة اللي بتتأرشف هي اللي فات
+        // معاد امتحانها (عبر autoArchivePastExams)، وده بيحصل فورًا لحظة انتهاء الوقت.
+        // لو فلترنا s.archived هنا، حالة "✓ انتهى الامتحان" (3 أيام سماح) مستحيل تتشاف
+        // لأن المادة بتتأرشف قبل ما الودجت يعمل render تاني. الفلتر التاني تحت (ms > -3 أيام)
+        // كافي وحده عشان يخفيها بعد فترة السماح.
+        .filter(s => s.examDate)
         .map(s => ({ ...s, ms: getExamMsLeft(s) }))
         .filter(s => s.ms !== null && s.ms > -86400000 * 3) // include up to 3 days past
         .sort((a, b) => a.ms - b.ms);
@@ -683,7 +699,6 @@ function formatCountdown(ms) {
 
     return { text, done: false, isToday };
 }
-// إبقاء الاسم القديم متوافقاً — استخدم formatCountdown مباشرة
 
 // Live countdown interval (updates every minute when on subjects page)
 let countdownInterval = null;
@@ -738,7 +753,7 @@ function renderSubjects() {
     const archivedSubs = allSubs.filter(s => s.archived);
     const pO = { critical: 0, high: 1, medium: 2, low: 3, done: 4 };
     const sortFn = (a, b) => {
-        if (sort === 'priority') return pO[getPriority(a.examDate)] - pO[getPriority(b.examDate)];
+        if (sort === 'priority') return pO[getPriority(a)] - pO[getPriority(b)];
         if (sort === 'name') return a.name.localeCompare(b.name);
         if (!a.examDate) return 1; if (!b.examDate) return -1; return a.examDate.localeCompare(b.examDate);
     };
@@ -774,7 +789,7 @@ function renderSubjects() {
 
 function buildSubjectCard(s, isArchived, isNearest) {
     const pL = { critical: 'حرج', high: 'عالي', medium: 'متوسط', low: 'منخفض', done: 'تم' };
-    const p = getPriority(s.examDate);
+    const p = getPriority(s);
     const ms = getExamMsLeft(s);
     const cd = formatCountdown(ms);
     let examHtml = '';
@@ -874,9 +889,13 @@ function restoreSubject(id) {
     if (!s) return;
     s.archived = false;
     delete s.archivedAt;
+    delete s.autoArchived;
     saveData();
     renderSubjects();
-    showToast('تمت استعادة ' + s.name);
+    // الاستعادة مالهاش لازمة غير عشان تصحّح تاريخ امتحان غلط —
+    // فبمجرد ما نشيل الأرشفة، نفتح مودال التعديل على طول عشان المستخدم يحدّث التاريخ.
+    // لو سابه زي ما هو وقفل المودال، هيرجع يتأرشف تلقائي تاني في أول render (autoArchivePastExams).
+    editSubject(id);
 }
 
 let archiveOpen = false;
@@ -893,7 +912,7 @@ function saveSubject() {
     const examDate = document.getElementById('sub-date').value || null;
     const examTime = document.getElementById('sub-time').value || '09:00';
     const hours = parseInt(document.getElementById('sub-hours').value) || 0;
-    const sub = { id: uid(), name, examDate, examTime, hours, done: false };
+    const sub = { id: uid(), name, examDate, examTime, hours };
     sub.color = getSubjectColor(sub); // color from priority, not picker
     G.data.subjects.push(sub); saveData(); document.getElementById('add-subject-form').classList.add('hidden');
     document.getElementById('sub-name').value = ''; document.getElementById('sub-date').value = ''; document.getElementById('sub-hours').value = ''; document.getElementById('sub-time').value = '09:00';
@@ -1720,8 +1739,10 @@ function renderAIHelp() {
     const todayMin = G.data.sessions.filter(s => s.date === today() && s.type === 'pomo').reduce((a, s) => a + s.duration, 0);
     const dueCards = getDueCards().length;
     const weekly = getWeeklyStats();
-    const activeSubs = G.data.subjects.filter(s => !s.archived && !s.done);
-    const urgentSub = activeSubs.filter(s => s.examDate && daysUntil(s.examDate) !== null && daysUntil(s.examDate) >= 0).sort((a, b) => (daysUntil(a.examDate) || 999) - (daysUntil(b.examDate) || 999))[0];
+    const activeSubs = G.data.subjects.filter(s => !s.archived);
+    // نفس منطق اختيار "أخطر مادة" المستخدم في buildSystemPrompt (بدقة الساعة عبر getExamMsLeft)
+    // عشان رسالة الترحيب هنا والـ AI نفسه يتفقوا دايمًا على نفس المادة، مش يختاروا مادتين مختلفتين في الحالات الحدّية
+    const urgentSub = activeSubs.filter(s => s.examDate && getExamMsLeft(s) !== null && getExamMsLeft(s) > 0).sort((a, b) => getExamMsLeft(a) - getExamMsLeft(b))[0];
     const allSess = G.data.sessions.filter(s => s.type === 'pomo');
     const totalHours = Math.round(allSess.reduce((a, s) => a + s.duration, 0) / 60 * 10) / 10;
 
@@ -1829,10 +1850,12 @@ function buildSystemPrompt() {
         const target = (s.hours || 0) * 60;
         const progress = target > 0 ? Math.round(studied / target * 100) : null;
         const goal = getAutoGoal(s);
-        const dk = G.data.flashDecks.find(d => d.subjectId === s.id);
-        const subDue = dk ? dk.cards.filter(c => !c.nextReview || c.nextReview <= Date.now()).length : 0;
-        const subMastered = dk ? dk.cards.filter(c => c.interval >= 21).length : 0;
-        const subCards = dk ? dk.cards.length : 0;
+        // ماده ممكن يكون ليها أكتر من مجموعة بطاقات — نجمعهم كلهم بدل ما ناخد أول واحدة بس
+        const subDecks = G.data.flashDecks.filter(d => d.subjectId === s.id);
+        const subCardsAll = subDecks.flatMap(d => d.cards);
+        const subDue = subCardsAll.filter(c => !c.nextReview || c.nextReview <= Date.now()).length;
+        const subMastered = subCardsAll.filter(c => c.interval >= 21).length;
+        const subCards = subCardsAll.length;
         let urgency = 'عادي';
         if (examEnded) urgency = 'انتهى الامتحان';
         else if (ms !== null) {
@@ -1905,7 +1928,7 @@ ${dailyBreakdown}
 
 ━━━ المواد بالتفصيل ━━━
 ${subsDetail}
-${G.data.subjects.filter(s => s.archived).length > 0 ? '\n━━━ مواد أُنجزت ━━━\n' + G.data.subjects.filter(s => s.archived).map(s => '✓ ' + s.name).join(', ') : ''}
+${G.data.subjects.filter(s => s.archived).length > 0 ? '\n━━━ مواد انتهى امتحانها ━━━\n' + G.data.subjects.filter(s => s.archived).map(s => '✓ ' + s.name).join(', ') : ''}
 
 ━━━ قواعد الرد ━━━
 1. الردود مختصرة وحادة — لا خطابات طويلة ممله
@@ -2092,7 +2115,19 @@ function getAutoGoal(s, now = new Date()) {
     const studied = getSubjectStudiedMinutes(s.id);
     const remaining = Math.max(0, targetMin - studied);
     const dailyNeeded = Math.round(remaining / dLeft);
-    return Math.max(15, Math.min(dailyNeeded, 120));
+    
+    // ✅ حدود ذكية ديناميكية حسب عدد الأيام المتبقية
+    // السبب: الضغط يختلف بين الأيام القليلة والأيام الكثيرة
+    if (dLeft <= 7) {
+        // وقت قليل جداً (أسبوع أو أقل): اسمح برقم أكبر
+        return Math.max(30, Math.min(dailyNeeded, 600));
+    } else if (dLeft <= 30) {
+        // وقت متوسط (أسبوع إلى شهر): توازن
+        return Math.max(15, Math.min(dailyNeeded, 300));
+    } else {
+        // وقت طويل (أكثر من شهر): توزيع مريح
+        return Math.max(10, Math.min(dailyNeeded, 120));
+    }
 }
 
 function getTodayStudied(subjectId) {
@@ -2161,10 +2196,12 @@ function renderInsights() {
         const target = (s.hours || 0) * 60;
         const pct = target > 0 ? Math.min(100, Math.round((studied / target) * 100)) : null;
         const dLeft = getExamDaysLeft(s);
-        const dk = G.data.flashDecks.find(d => d.subjectId === s.id);
-        const subDue = dk ? dk.cards.filter(c => !c.nextReview || c.nextReview <= Date.now()).length : 0;
-        const subMastered = dk ? dk.cards.filter(c => c.interval >= 21).length : 0;
-        const subCards = dk ? dk.cards.length : 0;
+        // ماده ممكن يكون ليها أكتر من مجموعة بطاقات — نجمعهم كلهم بدل ما ناخد أول واحدة بس
+        const subDecks = G.data.flashDecks.filter(d => d.subjectId === s.id);
+        const subCardsAll = subDecks.flatMap(d => d.cards);
+        const subDue = subCardsAll.filter(c => !c.nextReview || c.nextReview <= Date.now()).length;
+        const subMastered = subCardsAll.filter(c => c.interval >= 21).length;
+        const subCards = subCardsAll.length;
         const dailyGoal = getAutoGoal(s);
         return { ...s, studied, studiedToday, target, pct, dLeft, subDue, subMastered, subCards, dailyGoal };
     });
@@ -2173,9 +2210,9 @@ function renderInsights() {
 
     // تنبيهات ذكية
     const alerts = [];
-    G.data.subjects.filter(s => !s.done && !s.archived && s.examDate && getExamDaysLeft(s) !== null && getExamDaysLeft(s) >= 0 && getExamDaysLeft(s) <= 3)
+    G.data.subjects.filter(s => !s.archived && s.examDate && getExamDaysLeft(s) !== null && getExamDaysLeft(s) >= 0 && getExamDaysLeft(s) <= 3)
         .forEach(s => alerts.push({ type: 'er', icon: 'alert-triangle', msg: `امتحان <strong>${s.name}</strong> ${getExamDaysLeft(s) === 0 ? 'اليوم!' : 'بعد ' + ltrD(getExamDaysLeft(s)) + ' فقط!'}` }));
-    subProgress.filter(s => !s.done && !s.archived && s.dLeft !== null && s.dLeft >= 0 && s.dLeft <= 14 && s.studied === 0)
+    subProgress.filter(s => !s.archived && s.dLeft !== null && s.dLeft >= 0 && s.dLeft <= 14 && s.studied === 0)
         .forEach(s => alerts.push({ type: 'er', icon: 'book-open', msg: `لم تذاكر <strong>${s.name}</strong> بعد والامتحان بعد ${ltrD(s.dLeft)}` }));
     if (dueCards > 10) alerts.push({ type: 'wa', icon: 'layers', msg: `<strong>${dueCards}</strong> بطاقة للمراجعة — ${formatStudyDuration(10)} الآن تمنع التراكم` });
     if (activeDays7 < 3) alerts.push({ type: 'wa', icon: 'calendar', msg: `ذاكرت <bdi>${activeDays7}d</bdi> فقط هذا الأسبوع — الانتظام أهم من الكم` });
