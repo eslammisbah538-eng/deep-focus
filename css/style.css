@@ -3663,13 +3663,6 @@ body::-webkit-scrollbar {
         grid-template-columns: repeat(2, 1fr)
     }
 
-    .stat-card {
-        background: var(--s2);
-        border: none;
-        box-shadow: none;
-        padding: 12px;
-    }
-
     /* Disable heavy transitions */
     .sound-card,
     .subject-card,
