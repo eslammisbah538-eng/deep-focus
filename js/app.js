@@ -321,6 +321,7 @@ function startApp(data, isNewAccount) {
     const userName = document.getElementById('user-nm');
     if (userName) userName.textContent = G.data.name || 'User';
     applyTheme(G.theme); updateTopbar(); updateGreeting(); updateStreak(); navigate('dashboard'); updateFCBadge();
+    initNotifState(); checkExamReminders();
     checkAutoShowWrapped();
     // أرشفة تلقائية صامتة عند الدخول (silent=true لتفادي تعدد التوست مع navigate)
     setTimeout(() => autoArchivePastExams(true), 600);
@@ -376,6 +377,49 @@ function injectDeleteAccountButton(referenceBtnId, newId) {
     clone.title = 'حذف الحساب نهائياً من هذا المتصفح';
     clone.addEventListener('click', deleteAccountAndLogout);
     ref.insertAdjacentElement('afterend', clone);
+}
+
+// ── إشعارات الجهاز (Notification API) — تشتغل والتطبيق فاتح (تاب/خلفية قريبة)، مش لما يكون التطبيق مقفول تمامًا
+function initNotifState() {
+    const cb = document.getElementById('pomo-notif');
+    if (cb) cb.checked = !!(G.data.notifEnabled && 'Notification' in window && Notification.permission === 'granted');
+}
+function handleNotifToggle(cb) {
+    if (!cb.checked) { G.data.notifEnabled = false; saveData(); return; }
+    if (!('Notification' in window)) { showToast('المتصفح ده مش بيدعم الإشعارات', 'error'); cb.checked = false; return; }
+    Notification.requestPermission().then(perm => {
+        if (perm === 'granted') {
+            G.data.notifEnabled = true; saveData();
+            showToast('تم تفعيل الإشعارات', 'success');
+            sendAppNotification('ديب فوكس', 'هيوصلك إشعار لما وقت التركيز يخلص أو لما امتحان يقرب');
+        } else {
+            cb.checked = false;
+            showToast('لازم تسمح بالإشعارات من إعدادات المتصفح', 'error');
+        }
+    });
+}
+// title/body: نص الإشعار. playBeepToo=false تتفادى تكرار الصوت لو الصوت اتشغل بالفعل مكان تاني (زي بومودورو)
+function sendAppNotification(title, body, { playBeepToo = true } = {}) {
+    if (!G.data?.notifEnabled) return;
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    try {
+        const n = new Notification(title, { body, tag: 'deep-focus-' + Date.now() });
+        n.onclick = () => { window.focus(); n.close(); };
+    } catch (e) { console.warn('Notification error:', e); }
+    if (playBeepToo) playBeep();
+}
+// تنبيه بامتحان قريب (0-3 أيام)، مرة واحدة كحد أقصى في اليوم
+function checkExamReminders() {
+    if (!G.data?.notifEnabled) return;
+    const t = today();
+    if (G.data._lastExamNotifDate === t) return;
+    const subs = getUpcomingExamSubjects().filter(s => { const d = getExamDaysLeft(s); return d !== null && d >= 0 && d <= 3; });
+    if (!subs.length) return;
+    const s = subs[0];
+    const days = getExamDaysLeft(s);
+    const body = days === 0 ? ('امتحان ' + s.name + ' النهارده') : ('باقي ' + arCount(days, 'يوم', 'يومين', 'أيام') + ' على امتحان ' + s.name);
+    sendAppNotification('تذكير بامتحان', body);
+    G.data._lastExamNotifDate = t; saveData();
 }
 
 // ── TOPBAR: تحية ديناميكية حسب الوقت
@@ -1061,6 +1105,11 @@ function setPomoMode(mode) { if (G.pomo.running) { G.pomo._nextMode = mode; docu
 function pomoDone() {
     const mode = G.pomo.mode; const subId = document.getElementById('pomo-subject-sel')?.value; const d = getDurations(); const dur = d[mode];
     const snd = document.getElementById('pomo-sound'); if (snd?.checked) playBeep();
+    sendAppNotification(
+        mode === 'focus' ? 'خلصت فترة التركيز' : (mode === 'short' ? 'خلصت الاستراحة القصيرة' : 'خلصت الاستراحة الطويلة'),
+        mode === 'focus' ? 'وقت الاستراحة دلوقتي' : 'يلا ارجع للمذاكرة',
+        { playBeepToo: false }
+    );
 
     if (mode === 'focus') {
         // الوقت المنقضي منذ آخر تبديل مادة (أو من بداية الجلسة لو معملش تبديل) — مش مدة الجلسة كاملة
