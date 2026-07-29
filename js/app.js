@@ -320,7 +320,7 @@ function startApp(data, isNewAccount) {
     }
     const userName = document.getElementById('user-nm');
     if (userName) userName.textContent = G.data.name || 'User';
-    applyTheme(G.theme); updateTopbar(); updateStreak(); navigate('dashboard'); updateFCBadge();
+    applyTheme(G.theme); updateTopbar(); updateGreeting(); updateStreak(); navigate('dashboard'); updateFCBadge();
     checkAutoShowWrapped();
     // أرشفة تلقائية صامتة عند الدخول (silent=true لتفادي تعدد التوست مع navigate)
     setTimeout(() => autoArchivePastExams(true), 600);
@@ -378,6 +378,20 @@ function injectDeleteAccountButton(referenceBtnId, newId) {
     ref.insertAdjacentElement('afterend', clone);
 }
 
+// ── TOPBAR: تحية ديناميكية حسب الوقت
+// من 00:00 لحد 11:59 صباحًا "صباح الخير"، ومن 12:00 ظهرًا لحد 23:59 "مساء الخير"
+function updateGreeting() {
+    const hour = new Date().getHours();
+    const isMorning = hour < 12;
+    const icon = document.getElementById('greeting-icon');
+    const text = document.getElementById('greeting-text');
+    if (text) text.textContent = isMorning ? 'صباح الخير' : 'مساء الخير';
+    if (icon) {
+        icon.setAttribute('data-lucide', isMorning ? 'sun' : 'moon');
+        if (window.lucide) lucide.createIcons();
+    }
+}
+
 // ── TOPBAR & STREAK
 function updateTopbar() {
     const totalMin = (G.data.sessions || []).filter(s => s.type === 'pomo').reduce((a, s) => a + (s.duration || 0), 0);
@@ -422,8 +436,6 @@ function navigate(section) {
     document.querySelector('.nav-item[data-section="' + section + '"]')?.classList.add('active');
     document.querySelector('.bnav-item[data-section="' + section + '"]')?.classList.add('active');
     document.querySelector('.bnav-more-item[data-section="' + section + '"]')?.classList.add('active');
-    const titles = { dashboard: 'الرئيسية', subjects: 'المواد', pomodoro: 'بومودورو', flashcards: 'البطاقات', ambient: 'الأصوات', 'ai-help': 'مساعد AI', about: 'المطور', insights: 'تقرير الأداء' };
-    document.getElementById('section-title').textContent = titles[section] || section;
     if (section === 'dashboard') { renderDashboard(); startECCInterval(); }
     else if (section === 'subjects') renderSubjects();
     else if (section === 'pomodoro') renderPomodoro();

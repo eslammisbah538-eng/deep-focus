@@ -821,11 +821,24 @@ body::-webkit-scrollbar {
     background: var(--s2)
 }
 
-#section-title {
-    font-family: var(--f-h);
-    font-size: 1.05rem;
-    font-weight: 800;
-    color: var(--tx)
+.tb-greeting {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    min-width: 0;
+}
+
+.tb-greeting #greeting-icon {
+    width: 17px;
+    height: 17px;
+    color: var(--ac);
+    flex-shrink: 0;
+}
+
+#greeting-text {
+    font-size: .88rem;
+    color: var(--tm);
+    white-space: nowrap;
 }
 
 .tb-right {
@@ -833,35 +846,6 @@ body::-webkit-scrollbar {
     align-items: center;
     gap: 12px;
     margin-left: auto !important;
-}
-
-.hours-display {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    background: var(--s2);
-    border: 1px solid var(--bo);
-    padding: 4px 12px;
-    border-radius: 20px
-}
-
-.hours-display svg {
-    width: 14px;
-    height: 14px;
-    color: var(--ac)
-}
-
-.hours-val {
-    font-size: .78rem;
-    font-weight: 800;
-    color: var(--tx);
-    white-space: nowrap
-}
-
-.hours-label {
-    font-size: .68rem;
-    color: var(--tm);
-    white-space: nowrap
 }
 
 .user-chip {
@@ -891,13 +875,13 @@ body::-webkit-scrollbar {
 }
 
 #user-nm {
-    font-weight: 700;
-    font-size: .84rem;
+    font-weight: 800;
+    font-size: .88rem;
+    color: var(--tx);
     white-space: nowrap;
-    max-width: 100px;
+    max-width: 140px;
     overflow: hidden;
     text-overflow: ellipsis;
-
 }
 
 #content {
@@ -3585,7 +3569,11 @@ body::-webkit-scrollbar {
 
     #user-nm {
         display: inline-block;
-        max-width: 80px;
+        max-width: 88px;
+    }
+
+    #greeting-text {
+        font-size: .8rem;
     }
 
     #menu-btn {
@@ -3673,6 +3661,13 @@ body::-webkit-scrollbar {
     /* Stat cards */
     .dash-stats {
         grid-template-columns: repeat(2, 1fr)
+    }
+
+    .stat-card {
+        background: var(--s2);
+        border: none;
+        box-shadow: none;
+        padding: 12px;
     }
 
     /* Disable heavy transitions */
