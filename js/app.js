@@ -320,7 +320,7 @@ function startApp(data, isNewAccount) {
     }
     const userName = document.getElementById('user-nm');
     if (userName) userName.textContent = G.data.name || 'User';
-    applyTheme(G.theme); updateTopbar(); updateGreeting(); updateStreak(); navigate('dashboard'); updateFCBadge();
+    applyTheme(G.theme); updateGreeting(); updateStreak(); navigate('dashboard'); updateFCBadge();
     initNotifState(); checkExamReminders();
     checkAutoShowWrapped();
     // أرشفة تلقائية صامتة عند الدخول (silent=true لتفادي تعدد التوست مع navigate)
@@ -436,12 +436,7 @@ function updateGreeting() {
     }
 }
 
-// ── TOPBAR & STREAK
-function updateTopbar() {
-    const totalMin = (G.data.sessions || []).filter(s => s.type === 'pomo').reduce((a, s) => a + (s.duration || 0), 0);
-    const el = document.getElementById('total-hours-val');
-    if (el) el.textContent = formatStudyDuration(totalMin);
-}
+// ── STREAK
 function updateStreak() {
     const t = today();
     // الـ streak يزيد بس لو ذاكر فعلاً (في جلسة pomo اليوم)
@@ -496,7 +491,6 @@ function navigate(section) {
     }, 0);
     lucide.createIcons();
 }
-function goBack() { dismissKeyboard(); if (G.navHistory.length > 0) navigate(G.navHistory.pop()); else navigate('dashboard'); }
 
 // Navigate to Pomodoro and pre-select a specific subject
 function navigatePomodoro(subjectId) {
@@ -1084,7 +1078,7 @@ function resetPomo() {
             const subId = document.getElementById('pomo-subject-sel')?.value;
             const session = { id: uid(), subjectId: subId || '', date: today(), duration: elapsedMins, type: 'pomo', ts: Date.now() };
             G.data.sessions.push(session);
-            saveData(); updateStreak(); updateTopbar(); renderPomoLog();
+            saveData(); updateStreak(); renderPomoLog();
             showToast('تم حفظ ' + formatStudyDuration(elapsedMins) + ' ✓');
         }
     }
@@ -1129,7 +1123,7 @@ function pomoDone() {
         G.data.sessions.push(session);
     }
 
-    saveData(); if (mode === 'focus') { updateStreak(); updateTopbar(); } renderPomoLog(); showToast(mode === 'focus' ? 'ممتاز! خذ استراحة.' : 'انتهت الاستراحة!');
+    saveData(); if (mode === 'focus') { updateStreak(); } renderPomoLog(); showToast(mode === 'focus' ? 'ممتاز! خذ استراحة.' : 'انتهت الاستراحة!');
 
     // Reset subject tracking for next session
     const nextMode = G.pomo._nextMode || (mode === 'focus' ? (G.pomo.sessions % 4 === 0 ? 'long' : 'short') : 'focus'); G.pomo._nextMode = null; G.pomo.mode = nextMode; G.pomo.timeLeft = d[nextMode] * 60; G.pomo.fullDuration = G.pomo.timeLeft;
@@ -2168,34 +2162,11 @@ function getAutoGoal(s, now = new Date()) {
     const hasTarget = (s.hours || 0) > 0;
     if (dLeft === null || !hasTarget) return null;
     if (dLeft <= 0) return null;
-    
     const targetMin = Number(s.hours || 0) * 60;
     const studied = getSubjectStudiedMinutes(s.id);
     const remaining = Math.max(0, targetMin - studied);
-    let dailyNeeded = remaining > 0 ? Math.round(remaining / dLeft) : 0;
-    
-    if (dLeft === 1) {
-        return Math.max(100, dailyNeeded);
-    } 
-    else if (dLeft <= 3) {
-        const accelerated = Math.round(dailyNeeded * 1.5);
-        return Math.max(50, accelerated);
-    } 
-    else if (dLeft <= 7) {
-        const accelerated = Math.round(dailyNeeded * 1.25);
-        return Math.max(40, accelerated);
-    } 
-    else if (dLeft <= 14) {
-        return Math.max(30, dailyNeeded);
-    } 
-    else if (dLeft <= 30) {
-        const relaxed = Math.round(dailyNeeded * 0.9);
-        return Math.max(20, relaxed);
-    } 
-    else {
-        const relaxed = Math.round(dailyNeeded * 0.8);
-        return Math.max(15, relaxed);
-    }
+    // الهدف اليومي الحقيقي = الوقت المتبقي ÷ الأيام المتبقية، بدون تضخيم أو تصغير
+    return Math.round(remaining / dLeft);
 }
 
 function getTodayStudied(subjectId) {
@@ -2407,7 +2378,6 @@ function handlePomoSubjectChange(newSubId) {
             });
             saveData();
             updateStreak();
-            updateTopbar();
             renderPomoLog();
             const oldName = G.data.subjects.find(s => s.id === oldSubId)?.name || 'دراسة عامة';
             showToast('✓ حُفظ ' + formatStudyDuration(elapsedMins) + ' لـ' + oldName);

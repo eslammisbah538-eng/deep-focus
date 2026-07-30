@@ -557,27 +557,6 @@ body::-webkit-scrollbar {
     filter: brightness(1.1)
 }
 
-.back-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    background: var(--s2);
-    border: 1px solid var(--bo);
-    color: var(--tm);
-    padding: 7px 14px;
-    border-radius: var(--rs);
-    font-size: .82rem;
-    font-weight: 700;
-    cursor: pointer;
-    margin-bottom: 18px
-}
-
-.back-btn:hover {
-    background: var(--pg);
-    color: var(--p);
-    border-color: var(--p)
-}
-
 /* ── APP LAYOUT ── */
 #app {
     display: grid;
@@ -1080,6 +1059,7 @@ body::-webkit-scrollbar {
 
 .form-row {
     display: flex;
+    align-items: flex-end;
     gap: 10px;
     flex-wrap: wrap;
     margin-bottom: 10px
