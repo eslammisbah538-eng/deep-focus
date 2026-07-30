@@ -1912,6 +1912,8 @@ function buildSystemPrompt() {
     const subsDetail = G.data.subjects.filter(s => !s.archived).map(s => {
         const ms = getExamMsLeft(s);
         const cd = ms !== null ? formatCountdown(ms) : null; // يعتمد على examDate + examTime معاً
+        const daysLeft = getExamDaysLeft(s);
+        const remainingHours = target > 0 ? ((target - studied) / 60).toFixed(1) : 'غ.محدد';
         const examEnded = cd ? cd.done : false;
         const studied = allSess.filter(ss => ss.subjectId === s.id).reduce((a, ss) => a + ss.duration, 0);
         const studiedToday = allSess.filter(ss => ss.subjectId === s.id && ss.date === today()).reduce((a, ss) => a + ss.duration, 0);
@@ -1939,6 +1941,8 @@ function buildSystemPrompt() {
         else if (!examEnded && ms !== null && ms <= 14 * 86400000 && progress !== null && progress < 50) hint = '⚠ تحتاج تسريع';
         else if (progress !== null && progress >= 80) hint = '✓ قريب من الهدف';
         else if (studiedToday === 0 && !examEnded && ms !== null && ms <= 7 * 86400000) hint = '🔴 محتاج مذاكرة اليوم';
+        const daysStr = daysLeft === null ? 'غ.محدد' : (daysLeft === -1 ? 'انتهى' : `${daysLeft}d`);
+        const remainingStr = remainingHours !== 'غ.محدد' ? `${remainingHours}h المتبقية` : '';
         const examStr = cd === null ? 'غ.محدد' : examEnded ? 'انتهى' : cd.text;
         const studyStr = `${Math.round(studied / 60 * 10) / 10}h${target > 0 ? '/' + Math.round(target / 60) + 'h(' + (progress || 0) + '%)' : ''}`;
         const goalStr = goal === null ? 'غ.محدد' : formatStudyDuration(goal);
@@ -2148,7 +2152,7 @@ function getRemainingStudyDays(subject, now = new Date()) {
     const today = new Date(now);
     examDate.setHours(0, 0, 0, 0);
     today.setHours(0, 0, 0, 0);
-    const diffDays = Math.ceil((examDate - today) / 86400000);
+    const diffDays = Math.floor((examDate - today) / 86400000);
     return Math.max(1, diffDays);
 }
 
@@ -2160,27 +2164,37 @@ function getSubjectStudiedMinutes(subjectId) {
 }
 
 function getAutoGoal(s, now = new Date()) {
-    // الهدف اليومي يُحسب من جديد كل مرة بناءً على الزمن المتبقي والأيام المتبقية.
     const dLeft = getRemainingStudyDays(s, now);
     const hasTarget = (s.hours || 0) > 0;
     if (dLeft === null || !hasTarget) return null;
-    if (dLeft <= 0) return null; // الامتحان انتهى أو اليوم — مفيش "هدف يومي" مستقبلي يُحسب
+    if (dLeft <= 0) return null;
+    
     const targetMin = Number(s.hours || 0) * 60;
     const studied = getSubjectStudiedMinutes(s.id);
     const remaining = Math.max(0, targetMin - studied);
-    const dailyNeeded = Math.round(remaining / dLeft);
+    let dailyNeeded = remaining > 0 ? Math.round(remaining / dLeft) : 0;
     
-    // ✅ حدود ذكية ديناميكية حسب عدد الأيام المتبقية
-    // السبب: الضغط يختلف بين الأيام القليلة والأيام الكثيرة
-    if (dLeft <= 7) {
-        // وقت قليل جداً (أسبوع أو أقل): اسمح برقم أكبر
-        return Math.max(30, Math.min(dailyNeeded, 600));
-    } else if (dLeft <= 30) {
-        // وقت متوسط (أسبوع إلى شهر): توازن
-        return Math.max(15, Math.min(dailyNeeded, 300));
-    } else {
-        // وقت طويل (أكثر من شهر): توزيع مريح
-        return Math.max(10, Math.min(dailyNeeded, 120));
+    if (dLeft === 1) {
+        return Math.max(100, dailyNeeded);
+    } 
+    else if (dLeft <= 3) {
+        const accelerated = Math.round(dailyNeeded * 1.5);
+        return Math.max(50, accelerated);
+    } 
+    else if (dLeft <= 7) {
+        const accelerated = Math.round(dailyNeeded * 1.25);
+        return Math.max(40, accelerated);
+    } 
+    else if (dLeft <= 14) {
+        return Math.max(30, dailyNeeded);
+    } 
+    else if (dLeft <= 30) {
+        const relaxed = Math.round(dailyNeeded * 0.9);
+        return Math.max(20, relaxed);
+    } 
+    else {
+        const relaxed = Math.round(dailyNeeded * 0.8);
+        return Math.max(15, relaxed);
     }
 }
 
