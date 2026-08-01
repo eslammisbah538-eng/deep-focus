@@ -2,7 +2,7 @@
 
 A complete study and time-management web app — Pomodoro timer, AI-generated flashcards, an AI study assistant, ambient sounds, and a smart planner, all in one place.
 
-**Live app:** [deep-focus-islam-misbah.vercel.app](https://deep-focus-islam-misbah.vercel.app/)
+**Live app:** [deepfocus-zone.vercel.app](https://deepfocus-zone.vercel.app/)
 
 ---
 
@@ -33,14 +33,22 @@ A complete study and time-management web app — Pomodoro timer, AI-generated fl
 ## Project Structure
 
 ```
-├── index.html          # Main page structure
+├── index.html            # Main page structure
+├── manifest.json         # PWA manifest (name, icons, theme)
+├── robots.txt             # Search engine crawling rules
+├── sitemap.xml            # Sitemap for SEO
+├── preview.png             # Social share preview image (og:image / twitter:image)
+├── apple-touch-icon.png     # iOS home screen icon
+├── favicon-16x16.png         # Browser favicon (16x16)
+├── favicon-32x32.png         # Browser favicon (32x32)
+├── icon-192.png                # PWA icon (192x192)
+├── icon-512.png                # PWA icon (512x512)
 ├── css/
-│   └── style.css       # All styling
+│   └── style.css           # All styling
 ├── js/
-│   ├── app.js           # Core app logic (state, timer, AI, analytics...)
-│   └── onboarding.js     # First-run onboarding/walkthrough flow
-├── images/
-│   └── preview.png       # Social share preview image (og:image / twitter:image)
+│   ├── app.js               # Core app logic (state, timer, AI, analytics...)
+│   └── onboarding.js         # First-run onboarding/walkthrough flow
+├── images/                    # Additional in-app images/assets
 └── README.md
 ```
 

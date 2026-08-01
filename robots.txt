@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://deep-focus-islam-misbah.vercel.app/sitemap.xml
+Sitemap: https://deepfocus-zone.vercel.app/sitemap.xml
