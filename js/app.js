@@ -159,10 +159,18 @@ function formatStudyDuration(minutes) {
     const hours = Math.floor(total / 60);
     const mins = total % 60;
     
-    // لو تجاوز 24 ساعة → عرض بالأيام لتجنب التضخم
     if (hours >= 24) {
         const days = Math.floor(hours / 24);
         const remainHours = hours % 24;
+        
+        // لو تجاوز سنة (365 يوم) → عرض بالسنوات
+        if (days >= 365) {
+            const years = Math.floor(days / 365);
+            const remainDays = days % 365;
+            if (remainDays === 0) return `${years}y`;
+            return `${years}y ${remainDays}d`;
+        }
+        
         if (remainHours === 0) return `${days}d`;
         return `${days}d ${remainHours}h`;
     }
@@ -179,10 +187,18 @@ function formatStudyDurationAr(minutes) {
     const hours = Math.floor(total / 60);
     const mins = total % 60;
     
-    // لو تجاوز 24 ساعة → عرض بالأيام لتجنب التضخم
     if (hours >= 24) {
         const days = Math.floor(hours / 24);
         const remainHours = hours % 24;
+        
+        // لو تجاوز سنة (365 يوم) → عرض بالسنوات
+        if (days >= 365) {
+            const years = Math.floor(days / 365);
+            const remainDays = days % 365;
+            if (remainDays === 0) return arCount(years, 'سنة', 'سنتين', 'سنوات');
+            return `${arCount(years, 'سنة', 'سنتين', 'سنوات')} و${arCount(remainDays, 'يوم', 'يومين', 'أيام')}`;
+        }
+        
         if (remainHours === 0) return arCount(days, 'يوم', 'يومين', 'أيام');
         return `${arCount(days, 'يوم', 'يومين', 'أيام')} و${arCount(remainHours, 'ساعة', 'ساعتين', 'ساعات')}`;
     }
