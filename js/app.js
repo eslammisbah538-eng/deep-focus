@@ -155,8 +155,18 @@ function today() { return new Date().toISOString().slice(0, 10); }
 function formatStudyDuration(minutes) {
     const total = Math.max(0, Math.round(Number(minutes) || 0));
     if (total < 60) return `${total}m`;
+    
     const hours = Math.floor(total / 60);
     const mins = total % 60;
+    
+    // لو تجاوز 24 ساعة → عرض بالأيام لتجنب التضخم
+    if (hours >= 24) {
+        const days = Math.floor(hours / 24);
+        const remainHours = hours % 24;
+        if (remainHours === 0) return `${days}d`;
+        return `${days}d ${remainHours}h`;
+    }
+    
     if (mins === 0) return `${hours}h`;
     return `${hours}h ${mins}m`;
 }
@@ -165,8 +175,18 @@ function formatStudyDuration(minutes) {
 function formatStudyDurationAr(minutes) {
     const total = Math.max(0, Math.round(Number(minutes) || 0));
     if (total < 60) return arCount(total, 'دقيقة', 'دقيقتين', 'دقائق');
+    
     const hours = Math.floor(total / 60);
     const mins = total % 60;
+    
+    // لو تجاوز 24 ساعة → عرض بالأيام لتجنب التضخم
+    if (hours >= 24) {
+        const days = Math.floor(hours / 24);
+        const remainHours = hours % 24;
+        if (remainHours === 0) return arCount(days, 'يوم', 'يومين', 'أيام');
+        return `${arCount(days, 'يوم', 'يومين', 'أيام')} و${arCount(remainHours, 'ساعة', 'ساعتين', 'ساعات')}`;
+    }
+    
     if (mins === 0) return arCount(hours, 'ساعة', 'ساعتين', 'ساعات');
     return `${arCount(hours, 'ساعة', 'ساعتين', 'ساعات')} و${arCount(mins, 'دقيقة', 'دقيقتين', 'دقائق')}`;
 }
