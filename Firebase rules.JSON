@@ -1,0 +1,27 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "rooms": {
+      "$roomCode": {
+        ".read": true,
+        ".write": true,
+        "createdAt": { ".validate": true },
+        "members": {
+          "$memberId": {
+            ".validate": "newData.hasChildren(['name','avatarType','status'])",
+            "name": { ".validate": "newData.isString() && newData.val().length <= 40" },
+            "avatarType": { ".validate": "newData.val() === 'boy' || newData.val() === 'girl'" },
+            "status": { ".validate": "newData.val() === 'online' || newData.val() === 'studying' || newData.val() === 'offline'" },
+            "lastSeen": { ".validate": true },
+            "joinedAt": { ".validate": true },
+            "days": {
+              "$dateKey": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1440" }
+            }
+          }
+        },
+        "$other": { ".validate": false }
+      }
+    }
+  }
+}

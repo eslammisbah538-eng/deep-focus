@@ -209,6 +209,8 @@
                             data-lucide="music"></i></span><span class="nav-label">أصوات</span></a>
                 <a class="nav-item" data-section="insights"><span class="nav-icon"><i
                             data-lucide="trending-up"></i></span><span class="nav-label">تقرير الأداء</span></a>
+                <a class="nav-item" data-section="rooms"><span class="nav-icon"><i
+                            data-lucide="users"></i></span><span class="nav-label">غرف المذاكرة</span></a>
                 <a class="nav-item" data-section="ai-help"><span class="nav-icon"><i data-lucide="bot"></i></span><span
                         class="nav-label">مساعد <span dir="ltr">AI</span></span></a>
                 <a class="nav-item" data-section="about"><span class="nav-icon"><i data-lucide="user"></i></span><span
@@ -248,6 +250,8 @@
                             data-lucide="music"></i><span>أصوات</span></button>
                     <button class="bnav-more-item" data-section="insights"><i
                             data-lucide="trending-up"></i><span>الأداء</span></button>
+                    <button class="bnav-more-item" data-section="rooms"><i
+                            data-lucide="users"></i><span>غرف المذاكرة</span></button>
                     <button class="bnav-more-item" data-section="about"><i
                             data-lucide="user"></i><span>المطور</span></button>
                 </div>
@@ -640,6 +644,57 @@
                     <div id="insights-content" dir="rtl"></div>
                 </section>
 
+                <!-- ROOMS -->
+                <section id="sec-rooms" class="section">
+                    <div id="rooms-lobby">
+                        <div class="section-toolbar">
+                            <button class="btn-primary" id="room-create-btn"><i data-lucide="plus-circle"></i> إنشاء
+                                غرفة جديدة</button>
+                        </div>
+                        <div class="rooms-lobby-grid">
+                            <div class="form-card">
+                                <h3><i data-lucide="log-in"></i> دخول لغرفة موجودة</h3>
+                                <p style="color:var(--tm);font-size:.8rem;margin-bottom:10px">اكتب الكود اللي بعتهولك
+                                    صاحبك</p>
+                                <div class="form-row">
+                                    <input type="text" id="room-code-input" placeholder="ABCDEF" maxlength="6"
+                                        autocomplete="off" spellcheck="false"
+                                        style="text-transform:uppercase;letter-spacing:4px;font-weight:800;text-align:center;font-size:1.1rem">
+                                </div>
+                                <div class="form-actions">
+                                    <button class="btn-primary" id="room-join-btn"><i
+                                            data-lucide="arrow-left-to-line"></i> دخول للغرفة</button>
+                                </div>
+                            </div>
+                            <div class="card">
+                                <h3 class="card-title"><i data-lucide="info"></i> إيه هي غرفة المذاكرة؟</h3>
+                                <p style="color:var(--tm);font-size:.85rem;line-height:1.9">اعمل غرفة وابعت الكود لحد
+                                    5 أصحاب (المجموعة كلها لحد 6 أشخاص). كل واحد شغال بالبومودورو بتاعه لوحده، بس
+                                    هتشوفوا مين شغال دلوقتي ومين لأ، وساعات كل واحد يومياً وأسبوعياً على نفس الشاشة.
+                                    الغرفة بتتقفل تلقائي لما كل الأعضاء يخرجوا منها.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="rooms-active" class="hidden">
+                        <div class="section-toolbar">
+                            <div class="room-code-chip">
+                                <span>كود الغرفة</span>
+                                <strong id="room-code-display">------</strong>
+                                <button class="btn-sm" id="room-copy-btn" title="نسخ الكود"><i
+                                        data-lucide="copy"></i></button>
+                            </div>
+                            <div class="room-period-tabs" style="margin-right:auto">
+                                <button class="room-period-btn active" data-period="today">اليوم</button>
+                                <button class="room-period-btn" data-period="week">الأسبوع</button>
+                            </div>
+                            <button class="btn-ghost btn-sm" id="room-leave-btn" style="color:var(--er)"><i
+                                    data-lucide="log-out"></i> خروج من الغرفة</button>
+                        </div>
+                        <div id="room-members-grid" class="room-members-grid"></div>
+                    </div>
+                </section>
+
                 <!-- ABOUT -->
                 <section id="sec-about" class="section">
                     <div class="about-wrap">
@@ -724,8 +779,14 @@
         </div>
     </div>
 
+    <!-- Firebase (لغرف المذاكرة الجماعية) -->
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
+    <script src="js/firebase-config.js"></script>
+
     <script src="js/onboarding.js"></script>
     <script src="js/app.js"></script>
+    <script src="js/rooms.js"></script>
 </body>
 
 </html>
