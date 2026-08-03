@@ -105,8 +105,9 @@
     // ── Join ──
     async function joinRoom(rawCode) {
         if (!ensureReady()) return;
-        const code = (rawCode || '').trim().toUpperCase();
-        if (code.length !== ROOM_CODE_LEN) { showToast('الكود لازم يكون 6 خانات'); return; }
+        // بنشيل أي حاجة مش حرف/رقم إنجليزي (مسافات، حروف اتجاه مخفية بسبب الصفحة العربية، إلخ)
+        const code = (rawCode || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+        if (code.length !== ROOM_CODE_LEN) { showToast('الكود لازم يكون 6 خانات بالظبط — تأكد إنك ناسخه بزرار النسخ 📋'); return; }
         const btn = document.getElementById('room-join-btn');
         if (btn) btn.disabled = true;
         try {
@@ -304,6 +305,11 @@
     function initRoomsUI() {
         document.getElementById('room-create-btn')?.addEventListener('click', createRoom);
         const codeInput = document.getElementById('room-code-input');
+        // تنضيف حي وقت الكتابة/اللصق: حروف وأرقام إنجليزي بس، وتحويل تلقائي لحروف كبيرة
+        codeInput?.addEventListener('input', () => {
+            const clean = codeInput.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, ROOM_CODE_LEN);
+            if (clean !== codeInput.value) codeInput.value = clean;
+        });
         document.getElementById('room-join-btn')?.addEventListener('click', () => joinRoom(codeInput ? codeInput.value : ''));
         codeInput?.addEventListener('keydown', e => { if (e.key === 'Enter') joinRoom(codeInput.value); });
         document.getElementById('room-leave-btn')?.addEventListener('click', () => {

@@ -675,7 +675,13 @@ body::-webkit-scrollbar {
     padding: 10px 8px;
     display: flex;
     flex-direction: column;
-    gap: 2px
+    gap: 2px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+#sb-nav::-webkit-scrollbar {
+    display: none;
 }
 
 .nav-item {
