@@ -67,11 +67,16 @@ const ONBOARDING_STEPS = [
     }
 ];
 
+// ترتيب الخطوات على الموبايل لازم يتبع نفس ترتيب أيقونات الشريط السفلي (الرئيسية، بومودورو، المواد، AI، ثم المزيد)
+// بدل ترتيب سايد بار اللاب (الرئيسية، المواد، بومودورو...)، عشان الجولة متقفزش وترجع تاني وتلخبط المستخدم
+const ONBOARDING_MOBILE_ORDER = ['dashboard', 'pomodoro', 'subjects', 'ai-help', 'flashcards', 'ambient', 'insights', 'end'];
+
 class Onboarding {
     constructor() {
         this.currentStep = 0;
         this.isActive = false;
         this.hasShown = localStorage.getItem('df_onboarding_shown') === 'true';
+        this.steps = ONBOARDING_STEPS;
     }
 
     shouldShow() {
@@ -81,6 +86,13 @@ class Onboarding {
     // ── الشاشات الصغيرة: التنقل شريط سفلي مش سايد بار (نفس البريك بوينت المستخدم في باقي الموقع)
     isMobile() {
         return window.matchMedia('(max-width:768px)').matches;
+    }
+
+    // بيرجع قائمة الخطوات بالترتيب الصح حسب نوع الشاشة: ترتيب سايد بار اللاب، أو ترتيب الشريط السفلي في الموبايل
+    getSteps() {
+        if (!this.isMobile()) return ONBOARDING_STEPS;
+        const byId = Object.fromEntries(ONBOARDING_STEPS.map(s => [s.id, s]));
+        return ONBOARDING_MOBILE_ORDER.map(id => byId[id]).filter(Boolean);
     }
 
     // بيرجع اسم الـ data-section من نص الـ selector بتاع الخطوة، زي '[data-section="dashboard"]' → 'dashboard'
@@ -117,6 +129,7 @@ class Onboarding {
         if (this.hasShown) return;
         this.isActive = true;
         this.currentStep = 0;
+        this.steps = this.getSteps();
         this.createOverlay();
         this.showStep(0);
     }
@@ -150,10 +163,10 @@ class Onboarding {
     }
 
     showStep(stepIndex) {
-        if (stepIndex < 0 || stepIndex >= ONBOARDING_STEPS.length) return;
+        if (stepIndex < 0 || stepIndex >= this.steps.length) return;
 
         this.currentStep = stepIndex;
-        const step = ONBOARDING_STEPS[stepIndex];
+        const step = this.steps[stepIndex];
         const overlay = document.getElementById('onboarding-overlay');
         if (!overlay) return;
 
@@ -170,7 +183,7 @@ class Onboarding {
         // تحديث النصوص
         document.getElementById('onboarding-title').innerHTML = `<span class="onboarding-title-with-icon"><i data-lucide="${step.icon}"></i><span>${step.title}</span></span>`;
         document.getElementById('onboarding-desc').textContent = step.desc;
-        document.getElementById('onboarding-step-num').textContent = `${stepIndex + 1}/${ONBOARDING_STEPS.length}`;
+        document.getElementById('onboarding-step-num').textContent = `${stepIndex + 1}/${this.steps.length}`;
 
         // تحديث أزرار التنقل
         document.getElementById('onboarding-prev').style.display = stepIndex === 0 ? 'none' : 'block';
@@ -283,7 +296,7 @@ class Onboarding {
     }
 
     next() {
-        if (this.currentStep < ONBOARDING_STEPS.length - 1) {
+        if (this.currentStep < this.steps.length - 1) {
             this.showStep(this.currentStep + 1);
         } else {
             this.end();
