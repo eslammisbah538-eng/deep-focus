@@ -78,6 +78,41 @@ class Onboarding {
         return !this.hasShown;
     }
 
+    // ── الشاشات الصغيرة: التنقل شريط سفلي مش سايد بار (نفس البريك بوينت المستخدم في باقي الموقع)
+    isMobile() {
+        return window.matchMedia('(max-width:768px)').matches;
+    }
+
+    // بيرجع اسم الـ data-section من نص الـ selector بتاع الخطوة، زي '[data-section="dashboard"]' → 'dashboard'
+    getSectionFromTarget(target) {
+        if (!target) return null;
+        const m = target.match(/data-section="([^"]+)"/);
+        return m ? m[1] : null;
+    }
+
+    // بيرجع العنصر الظاهر فعليًا للخطوة الحالية: سايد بار في اللاب، أو شريط سفلي/شيت "المزيد" في الموبايل
+    // (المشكلة الأصلية: querySelector كان بياخد أول عنصر مطابق للـ data-section في الـ DOM، وده دايمًا
+    // كان عنصر السايد بار بتاع اللاب حتى لو الشاشة موبايل ومخفي، فالهايلايت كان بيحسب مكان غلط)
+    getTargetElement(step) {
+        const section = this.getSectionFromTarget(step.target);
+        if (!section) return step.target ? document.querySelector(step.target) : null;
+
+        if (this.isMobile()) {
+            return document.querySelector(`.bnav-item[data-section="${section}"]`)
+                || document.querySelector(`.bnav-more-item[data-section="${section}"]`)
+                || null;
+        }
+        return document.querySelector(`.nav-item[data-section="${section}"]`) || document.querySelector(step.target);
+    }
+
+    // هل عنصر الخطوة دي في الموبايل موجود بس جوه شيت "المزيد" المطوي؟
+    isInMoreSheet(step) {
+        if (!this.isMobile()) return false;
+        const section = this.getSectionFromTarget(step.target);
+        if (!section) return false;
+        return !document.querySelector(`.bnav-item[data-section="${section}"]`) && !!document.querySelector(`.bnav-more-item[data-section="${section}"]`);
+    }
+
     init() {
         if (this.hasShown) return;
         this.isActive = true;
@@ -122,6 +157,16 @@ class Onboarding {
         const overlay = document.getElementById('onboarding-overlay');
         if (!overlay) return;
 
+        // في الموبايل: افتح شيت "المزيد" لو العنصر المستهدف جواه، وقفله لو مش محتاجينه
+        // عشان يبقى ظاهر وممكن نحسب مكانه صح قبل ما نعرض الهايلايت والكارد
+        if (this.isMobile()) {
+            if (this.isInMoreSheet(step)) {
+                if (typeof openBnavMore === 'function') openBnavMore();
+            } else if (typeof closeBnavMore === 'function') {
+                closeBnavMore();
+            }
+        }
+
         // تحديث النصوص
         document.getElementById('onboarding-title').innerHTML = `<span class="onboarding-title-with-icon"><i data-lucide="${step.icon}"></i><span>${step.title}</span></span>`;
         document.getElementById('onboarding-desc').textContent = step.desc;
@@ -154,7 +199,7 @@ class Onboarding {
             return;
         }
 
-        const targetEl = document.querySelector(step.target);
+        const targetEl = this.getTargetElement(step);
         if (!targetEl) {
             spotlight.style.display = 'none';
             return;
@@ -183,7 +228,7 @@ class Onboarding {
             return;
         }
 
-        const targetEl = document.querySelector(step.target);
+        const targetEl = this.getTargetElement(step);
         if (!targetEl) return;
 
         const rect = targetEl.getBoundingClientRect();
@@ -194,6 +239,21 @@ class Onboarding {
         card.style.position = 'fixed';
         card.style.maxWidth = cardWidth + 'px';
         card.style.transform = 'none';
+
+        // الموبايل: التنقل شريط سفلي (أو شيت "المزيد")، فمفيش مساحة جنب العنصر —
+        // نعرض الكارد فوقه ومتمركز عليه بدل ما نحاول نحطه يمين/شمال زي اللاب
+        if (this.isMobile()) {
+            let mLeft = rect.left + rect.width / 2 - cardWidth / 2 + window.scrollX;
+            mLeft = Math.max(minMargin + window.scrollX, Math.min(mLeft, window.innerWidth - cardWidth - minMargin + window.scrollX));
+            card.style.left = mLeft + 'px';
+
+            let mTop = rect.top + window.scrollY - card.offsetHeight - gap;
+            if (mTop < minMargin + window.scrollY) {
+                mTop = rect.bottom + gap + window.scrollY;
+            }
+            card.style.top = mTop + 'px';
+            return;
+        }
 
         let left = rect.right + gap + window.scrollX;
         if (step.position === 'right' && left + cardWidth > window.innerWidth) {
@@ -237,6 +297,7 @@ class Onboarding {
     }
 
     end() {
+        if (typeof closeBnavMore === 'function') closeBnavMore();
         const overlay = document.getElementById('onboarding-overlay');
         if (overlay) {
             overlay.classList.add('confetti-mode');
