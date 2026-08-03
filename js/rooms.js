@@ -19,6 +19,9 @@
             if (!firebase.apps.length) firebase.initializeApp(window.firebaseConfig);
             db = firebase.database();
             fbReady = true;
+            console.log('[Room] Firebase initialized OK, databaseURL=', window.firebaseConfig.databaseURL);
+        } else {
+            console.warn('[Room] Firebase NOT ready. window.firebase=', !!window.firebase, 'window.firebaseConfig=', window.firebaseConfig);
         }
     } catch (e) { console.error('Room Firebase init failed:', e); }
 
@@ -104,16 +107,20 @@
 
     // ── Join ──
     async function joinRoom(rawCode) {
+        console.log('[Room] joinRoom called, fbReady=', fbReady);
         if (!ensureReady()) return;
         // بنشيل أي حاجة مش حرف/رقم إنجليزي (مسافات، حروف اتجاه مخفية بسبب الصفحة العربية، إلخ)
         const code = (rawCode || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+        console.log('[Room] cleaned code =', JSON.stringify(code), 'length=', code.length);
         if (code.length !== ROOM_CODE_LEN) { showToast('الكود لازم يكون 6 خانات بالظبط — تأكد إنك ناسخه بزرار النسخ 📋'); return; }
         const btn = document.getElementById('room-join-btn');
         if (btn) btn.disabled = true;
         try {
             const memberId = uid();
+            console.log('[Room] attempting transaction on rooms/' + code + '/members, memberId=', memberId);
             const membersRef = db.ref('rooms/' + code + '/members');
             const result = await membersRef.transaction(current => {
+                console.log('[Room] transaction fn called with current=', current);
                 if (current === null) return; // الغرفة مش موجودة -> نلغي المعاملة
                 const keys = Object.keys(current);
                 if (keys.length >= CAPACITY) return; // الغرفة كاملة -> نلغي المعاملة
@@ -127,6 +134,8 @@
                 return current;
             });
 
+            console.log('[Room] transaction result: committed=', result.committed, 'snapshot=', result.snapshot.val());
+
             if (!result.committed) {
                 const existing = result.snapshot.val();
                 showToast(existing === null ? 'الغرفة مش موجودة، اتأكد من الكود' : 'الغرفة مكتملة العدد (6 أشخاص)');
@@ -134,7 +143,8 @@
             }
             enterRoom(code, memberId);
         } catch (e) {
-            console.error(e); showToast('مقدرناش ندخلك الغرفة، جرب تاني');
+            console.error('[Room] joinRoom ERROR:', e, 'code:', e.code, 'message:', e.message);
+            showToast('مقدرناش ندخلك الغرفة، جرب تاني');
         } finally { if (btn) btn.disabled = false; }
     }
 
