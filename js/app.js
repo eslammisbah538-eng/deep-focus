@@ -2040,7 +2040,7 @@ ${G.data.subjects.filter(s => s.archived).length > 0 ? '\nانتهى امتحا�
 - اختبار مادة=3-5 أسئلة مباشرة بلا مقدمة
 - مادة "انتهى امتحانها"=تجاهلها تمامًا، ركّز على الباقي فقط
 - "هدف اليوم" ياخد من الحقل مباشرة دايمًا، ممنوع تحسبه بنفسك أو توزعه بطريقة تانية
-- جدول اليوم =  قائمة "▸ مادة: دقايق" بس (بلا أوقات/ساعات) + جملة ختام قصيره. استبعد اللي هدفها غير محدد، ولو الكل كذلك اطلب تاريخ امتحان+ساعات هدف
+- جدول اليوم = قائمة "▸ مادة: الوقت" بس. الوقت هنا لازم يتنسخ حرفيًا زي ما هو مكتوب في حقل "هدف" فوق لكل مادة (مثلاً 1h43m) من غير أي تعديل، حساب، أو إعادة صياغة (ممنوع تحوله لدقايق، وممنوع تكتبه "ساعة ودقيقة" أو أي صيغة تانية) + جملة ختام قصيره. استبعد اللي هدفها غير محدد، ولو الكل كذلك اطلب تاريخ امتحان+ساعات هدف
 - "كام دقيقة أذاكر [مادة]؟"=رقم هدف اليوم + تشجيع هادف ، بلا شرح. لو غير محدد قول للمستخدم يدخل البيانات بلا  اختراع رقم من نفسك ممنوع
 - تقييم الأسبوع=3 سطور: حكم(جيد/متوسط/ضعيف)+رقم دليل+نصيحة قصيره هادفه
 - "من فين أبدأ"=خطوة عملية واحدة بلا خطابة
@@ -2297,7 +2297,7 @@ function renderInsights() {
     subProgress.filter(s => !s.archived && s.dLeft !== null && s.dLeft >= 0 && s.dLeft <= 14 && s.studied === 0)
         .forEach(s => alerts.push({ type: 'er', icon: 'book-open', msg: `لم تذاكر <strong>${s.name}</strong> بعد والامتحان بعد ${ltrD(s.dLeft)}` }));
     if (dueCards > 10) alerts.push({ type: 'wa', icon: 'layers', msg: `<strong>${dueCards}</strong> بطاقة للمراجعة — ${formatStudyDuration(10)} الآن تمنع التراكم` });
-    if (activeDays7 < 3) alerts.push({ type: 'wa', icon: 'calendar', msg: `ذاكرت <bdi>${activeDays7}d</bdi> فقط هذا الأسبوع — الانتظام أهم من الكم` });
+    if (daysSinceFirst >= 7 && activeDays7 < 3) alerts.push({ type: 'wa', icon: 'calendar', msg: `ذاكرت <bdi>${activeDays7}d</bdi> فقط هذا الأسبوع — الانتظام أهم من الكم` });
     if (avgSession > 0 && avgSession < 20) alerts.push({ type: 'wa', icon: 'timer', msg: `متوسط جلساتك ${formatStudyDuration(avgSession)} — جرّب ${formatStudyDuration(25)} إلى ${formatStudyDuration(45)} للتركيز العميق` });
     if (G.data.streak.count >= 7) alerts.push({ type: 'ok', icon: 'flame', msg: `<bdi><strong>${G.data.streak.count}d</strong></bdi> متتالية! حافظ على هذه السلسلة 🔥` });
     if (allSess.some(s => s.ts) && hourBuckets[peakHour] > 0) alerts.push({ type: 'ok', icon: 'sun', msg: `أفضل أوقاتك هي <strong>${peakLabel}</strong> — خصصها للمواد الصعبة` });

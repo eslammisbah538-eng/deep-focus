@@ -2016,7 +2016,9 @@ body::-webkit-scrollbar {
 }
 
 .toggle-label {
-    cursor: pointer
+    cursor: pointer;
+    justify-content: flex-start !important;
+    gap: 10px
 }
 
 .toggle-label input {
@@ -2770,7 +2772,13 @@ body::-webkit-scrollbar {
     overflow-y: auto;
     overscroll-behavior-y: contain;
     padding-bottom: 7px;
-    scroll-behavior: smooth
+    scroll-behavior: smooth;
+    scrollbar-width: none;      /* Firefox */
+    -ms-overflow-style: none    /* IE و Edge القديم */
+}
+
+.ai-chat-area::-webkit-scrollbar {
+    display: none;   /* Chrome, Edge, Safari */
 }
 
 .ai-welcome {
