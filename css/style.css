@@ -3905,6 +3905,8 @@ body {
     backdrop-filter: blur(8px);
     background: rgba(13, 17, 30, .95);
     animation: slideInCard .3s ease;
+    direction: rtl;
+    text-align: right;
 }
 
 body.light .onboarding-card {

@@ -69,7 +69,7 @@ const ONBOARDING_STEPS = [
         target: null,
         icon: 'sparkles',
         title: 'أنت جاهز!',
-        desc: 'مبروك\nأنت جاهز لبدء رحلتك مع Deep Focus!\n\nالآن يمكنك:',
+        desc: 'مبروك\nأنت جاهز لبدء رحلتك مع Deep Focus!\n\nالآن يمكنك:\n• تضيف موادك وتحدد مواعيد امتحاناتك\n• تبدأ أول جلسة بومودورو للتركيز\n• تسأل مساعد AI عن أي حاجة محتاجها',
         position: 'center',
         isEnd: true
     }
