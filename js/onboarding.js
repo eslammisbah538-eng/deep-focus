@@ -57,6 +57,14 @@ const ONBOARDING_STEPS = [
         position: 'right'
     },
     {
+        id: 'about',
+        target: '[data-section="about"]',
+        icon: 'user',
+        title: 'عن المطور',
+        desc: 'اعرف مين وراء Deep Focus:\n• قصة الفكرة والتطوير\n• طرق التواصل\n• آخر تحديثات الموقع',
+        position: 'right'
+    },
+    {
         id: 'end',
         target: null,
         icon: 'sparkles',
@@ -69,7 +77,7 @@ const ONBOARDING_STEPS = [
 
 // ترتيب الخطوات على الموبايل لازم يتبع نفس ترتيب أيقونات الشريط السفلي (الرئيسية، بومودورو، المواد، AI، ثم المزيد)
 // بدل ترتيب سايد بار اللاب (الرئيسية، المواد، بومودورو...)، عشان الجولة متقفزش وترجع تاني وتلخبط المستخدم
-const ONBOARDING_MOBILE_ORDER = ['dashboard', 'pomodoro', 'subjects', 'ai-help', 'flashcards', 'ambient', 'insights', 'end'];
+const ONBOARDING_MOBILE_ORDER = ['dashboard', 'pomodoro', 'subjects', 'ai-help', 'flashcards', 'ambient', 'insights', 'about', 'end'];
 
 class Onboarding {
     constructor() {

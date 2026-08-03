@@ -416,9 +416,11 @@ function injectDeleteAccountButton(referenceBtnId, newId) {
 }
 
 // ── إشعارات الجهاز (Notification API) — تشتغل والتطبيق فاتح (تاب/خلفية قريبة)، مش لما يكون التطبيق مقفول تمامًا
+// ملحوظة: الشيك بوكس مبتتحدّدش من تفضيل محفوظ ولا صلاحية سابقة عمدًا — تفضل فاضية دايمًا عند فتح الصفحة
+// لحد ما المستخدم يدوس عليها بنفسه (handleNotifToggle هو الوحيد اللي بيعلّمها)
 function initNotifState() {
     const cb = document.getElementById('pomo-notif');
-    if (cb) cb.checked = !!(G.data.notifEnabled && 'Notification' in window && Notification.permission === 'granted');
+    if (cb) cb.checked = false;
 }
 function handleNotifToggle(cb) {
     if (!cb.checked) { G.data.notifEnabled = false; saveData(); return; }
@@ -2057,6 +2059,11 @@ function formatAIReply(raw) {
     // Wrap time expressions (e.g. 1:30 AM / 9:00 PM) in a single <bdi> BEFORE splitting individual numbers
     t = t.replace(/(\d{1,2}:\d{2}(?:\s*[APap][Mm])?)/g, '<bdi>$1</bdi>');
     // Wrap remaining standalone numbers + latin units in <bdi> so they don't flip in RTL context
+    t = t.replace(/(?<!<bdi>)(\d+(?:\.\d+)?(?:h|m|d|y|%|s)?)(?!<\/bdi>)/g, '<bdi>$1</bdi>');
+    // Merge adjacent duration-pair <bdi> spans (e.g. "1h" + "43m", "2d" + "5h", "1y" + "40d") into ONE
+    // <bdi> together — two separate <bdi> tags next to each other still get reordered relative to
+    // each other by the RTL algorithm, which is what was flipping "1h 43m" into "43m 1h"
+    t = t.replace(/<bdi>(\d+(?:\.\d+)?[hdy])<\/bdi> <bdi>(\d+(?:\.\d+)?[hmd])<\/bdi>/g, '<bdi>$1 $2</bdi>');
     t = t.replace(/(?<!<bdi>)(\d+(?:\.\d+)?(?:h|m|d|%|s)?)(?!<\/bdi>)/g, '<bdi>$1</bdi>');
     // Bold **text**
     t = t.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
