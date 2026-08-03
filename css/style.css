@@ -2015,6 +2015,13 @@ body::-webkit-scrollbar {
     padding: 5px
 }
 
+.pomo-value {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
 .toggle-label {
     cursor: pointer;
     justify-content: flex-start !important;
