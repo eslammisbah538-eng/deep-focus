@@ -77,7 +77,7 @@ npx serve .
 
 ## Developer
 
-Designed and built entirely by **Islam Misbah**, a Computer Science student at the Faculty of Science, Sohag University, and a Frontend Developer focused on building smart tools for learning.
+Designed and built entirely by **Islam Misbah**, a Computer Science student at the Faculty of Science, Sohag University, and a Full Stack Developer focused on building smart tools for learning.
 
 - WhatsApp: [01103023916](https://wa.me/201103023916)
 
