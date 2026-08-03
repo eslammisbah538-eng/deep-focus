@@ -1116,7 +1116,6 @@ function resetPomo() {
             const subId = document.getElementById('pomo-subject-sel')?.value;
             const session = { id: uid(), subjectId: subId || '', date: today(), duration: elapsedMins, type: 'pomo', ts: Date.now() };
             G.data.sessions.push(session);
-            if (window.RoomModule) RoomModule.addMinutes(elapsedMins);
             saveData(); updateStreak(); renderPomoLog();
             showToast('تم حفظ ' + formatStudyDuration(elapsedMins) + ' ✓');
         }
@@ -1155,7 +1154,6 @@ function pomoDone() {
         if (sessionDur >= 1) {
             const session = { id: uid(), subjectId: subId, date: today(), duration: sessionDur, type: 'pomo', ts: Date.now() };
             G.data.sessions.push(session);
-            if (window.RoomModule) RoomModule.addMinutes(sessionDur);
         }
         G.pomo.sessions++;
     } else {
@@ -2428,7 +2426,6 @@ function handlePomoSubjectChange(newSubId) {
                 id: uid(), subjectId: oldSubId, date: today(),
                 duration: elapsedMins, type: 'pomo', ts: Date.now(), source: 'subject_switch'
             });
-            if (window.RoomModule) RoomModule.addMinutes(elapsedMins);
             saveData();
             updateStreak();
             renderPomoLog();
@@ -2476,7 +2473,6 @@ window.addEventListener('beforeunload', () => {
                 id: uid(), subjectId: subId, date: today(),
                 duration: elapsedMins, type: 'pomo', ts: Date.now(), source: 'autosave'
             });
-            if (window.RoomModule) RoomModule.addMinutes(elapsedMins);
             saveData();
         }
     }
