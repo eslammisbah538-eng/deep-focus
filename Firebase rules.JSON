@@ -4,23 +4,34 @@
     ".write": false,
     "rooms": {
       "$roomCode": {
-        ".read": true,
+        ".read": "data.exists() || !root.child('rooms').child($roomCode).exists()",
         ".write": true,
         "createdAt": { ".validate": true },
         "members": {
           "$memberId": {
-            ".validate": "newData.hasChildren(['name','avatarType','status'])",
-            "name": { ".validate": "newData.isString() && newData.val().length <= 40" },
-            "avatarType": { ".validate": "newData.val() === 'boy' || newData.val() === 'girl'" },
-            "status": { ".validate": "newData.val() === 'online' || newData.val() === 'studying' || newData.val() === 'offline'" },
+            ".read": true,
+            ".write": true,
+            ".validate": "newData.hasChildren(['name','avatarType','status']) || newData.val() == null",
+            "name": { 
+              ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 40" 
+            },
+            "avatarType": { 
+              ".validate": "newData.val() === 'boy' || newData.val() === 'girl'" 
+            },
+            "status": { 
+              ".validate": "newData.val() === 'online' || newData.val() === 'studying' || newData.val() === 'offline'" 
+            },
             "lastSeen": { ".validate": true },
             "joinedAt": { ".validate": true },
-            "days": {
-              "$dateKey": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1440" }
+            "days": { 
+              ".read": true, 
+              ".write": true,
+              "$dateKey": { 
+                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1440" 
+              }
             }
           }
-        },
-        "$other": { ".validate": false }
+        }
       }
     }
   }

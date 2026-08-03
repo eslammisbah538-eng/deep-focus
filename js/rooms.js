@@ -74,6 +74,21 @@
     // ── Create ──
     async function createRoom() {
         if (!ensureReady()) return;
+        
+        // ✅ تحضير البيانات بشكل صحيح
+        let memberName = 'مستخدم';
+        let memberAvatar = 'boy';
+        try {
+            if (G && G.data) {
+                if (G.data.name && typeof G.data.name === 'string' && G.data.name.trim()) {
+                    memberName = G.data.name.trim().slice(0, 40);
+                }
+                if (G.data.avatarType && (G.data.avatarType === 'boy' || G.data.avatarType === 'girl')) {
+                    memberAvatar = G.data.avatarType;
+                }
+            }
+        } catch (e) { console.warn('[Room] Error reading G.data:', e); }
+        
         const btn = document.getElementById('room-create-btn');
         if (btn) btn.disabled = true;
         try {
@@ -91,11 +106,12 @@
                 createdAt: firebase.database.ServerValue.TIMESTAMP,
                 members: {
                     [memberId]: {
-                        name: (G.data && G.data.name) || 'مستخدم',
-                        avatarType: (G.data && G.data.avatarType) || 'boy',
+                        name: memberName,
+                        avatarType: memberAvatar,
                         status: 'online',
                         lastSeen: firebase.database.ServerValue.TIMESTAMP,
-                        joinedAt: firebase.database.ServerValue.TIMESTAMP
+                        joinedAt: firebase.database.ServerValue.TIMESTAMP,
+                        days: {} // ✅ أضفنا الـ days فارغة من البداية
                     }
                 }
             });
@@ -113,6 +129,23 @@
         const code = (rawCode || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
         console.log('[Room] cleaned code =', JSON.stringify(code), 'length=', code.length);
         if (code.length !== ROOM_CODE_LEN) { showToast('الكود لازم يكون 6 خانات بالظبط — تأكد إنك ناسخه بزرار النسخ 📋'); return; }
+        
+        // ✅ تحضير البيانات بشكل صحيح وقوي
+        let memberName = 'مستخدم';
+        let memberAvatar = 'boy';
+        try {
+            if (G && G.data) {
+                if (G.data.name && typeof G.data.name === 'string' && G.data.name.trim()) {
+                    memberName = G.data.name.trim().slice(0, 40);
+                }
+                if (G.data.avatarType && (G.data.avatarType === 'boy' || G.data.avatarType === 'girl')) {
+                    memberAvatar = G.data.avatarType;
+                }
+            }
+        } catch (e) { console.warn('[Room] Error reading G.data:', e); }
+        
+        console.log('[Room] Member data: name=', memberName, 'avatar=', memberAvatar);
+        
         const btn = document.getElementById('room-join-btn');
         if (btn) btn.disabled = true;
         try {
@@ -124,12 +157,15 @@
                 if (current === null) return; // الغرفة مش موجودة -> نلغي المعاملة
                 const keys = Object.keys(current);
                 if (keys.length >= CAPACITY) return; // الغرفة كاملة -> نلغي المعاملة
+                
+                // ✅ تأكد من وجود جميع الحقول المطلوبة بقيم صحيحة
                 current[memberId] = {
-                    name: (G.data && G.data.name) || 'مستخدم',
-                    avatarType: (G.data && G.data.avatarType) || 'boy',
+                    name: memberName,
+                    avatarType: memberAvatar,
                     status: 'online',
                     lastSeen: firebase.database.ServerValue.TIMESTAMP,
-                    joinedAt: firebase.database.ServerValue.TIMESTAMP
+                    joinedAt: firebase.database.ServerValue.TIMESTAMP,
+                    days: {} // ✅ أضفنا الـ days فارغة من البداية
                 };
                 return current;
             });
