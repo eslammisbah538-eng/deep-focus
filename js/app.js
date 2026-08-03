@@ -1943,12 +1943,13 @@ function buildSystemPrompt() {
         const ms = getExamMsLeft(s);
         const cd = ms !== null ? formatCountdown(ms) : null; // يعتمد على examDate + examTime معاً
         const daysLeft = getExamDaysLeft(s);
+        //  تعريف المتغيرات قبل الاستخدام
+        const studied = allSess.filter(ss => ss.subjectId === s.id).reduce((a, ss) => a + ss.duration, 0);
+        const target = (s.hours || 0) * 60;
+        const last7 = allSess.filter(ss => ss.subjectId === s.id && ss.date >= new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10)).reduce((a, ss) => a + ss.duration, 0);
         const remainingHours = target > 0 ? ((target - studied) / 60).toFixed(1) : 'غ.محدد';
         const examEnded = cd ? cd.done : false;
-        const studied = allSess.filter(ss => ss.subjectId === s.id).reduce((a, ss) => a + ss.duration, 0);
         const studiedToday = allSess.filter(ss => ss.subjectId === s.id && ss.date === today()).reduce((a, ss) => a + ss.duration, 0);
-        const last7 = allSess.filter(ss => ss.subjectId === s.id && ss.date >= new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10)).reduce((a, ss) => a + ss.duration, 0);
-        const target = (s.hours || 0) * 60;
         const progress = target > 0 ? Math.round(studied / target * 100) : null;
         const goal = getAutoGoal(s);
         // ماده ممكن يكون ليها أكتر من مجموعة بطاقات — نجمعهم كلهم بدل ما ناخد أول واحدة بس
