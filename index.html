@@ -3,7 +3,8 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
+    <meta name="viewport"
+        content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
 
     <!-- ============================================
          SEO أساسي - العنوان والوصف 
@@ -92,14 +93,14 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Deep Focus">
-<script src="https://unpkg.com/lucide@latest"></script>
-<!-- إضافة preconnect للـ CDN -->
-<link rel="preconnect" href="https://unpkg.com">
-<link rel="dns-prefetch" href="https://unpkg.com">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- إضافة preconnect للـ CDN -->
+    <link rel="preconnect" href="https://unpkg.com">
+    <link rel="dns-prefetch" href="https://unpkg.com">
     <link
         href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap"
         rel="stylesheet">
-    
+
     <script>
         (function () {
             try {
@@ -139,15 +140,8 @@
                 <label class="auth-label" for="entry-name">اسمك</label>
                 <div class="auth-input-wrap">
                     <i data-lucide="user" class="auth-input-icon" aria-hidden="true"></i>
-                    <input
-                        type="text"
-                        id="entry-name"
-                        placeholder="أدخل اسمك..."
-                        autofocus
-                        autocomplete="name"
-                        spellcheck="false"
-                        aria-describedby="auth-name-hint auth-error"
-                    >
+                    <input type="text" id="entry-name" placeholder="أدخل اسمك..." autofocus autocomplete="name"
+                        spellcheck="false" aria-describedby="auth-name-hint auth-error">
                 </div>
                 <div id="auth-name-hint" style="margin-top:8px;color:var(--tm);font-size:.75rem;line-height:1.5">
                     الاسم هيظهر داخل التطبيق.
@@ -164,12 +158,9 @@
                 ادخل الآن
             </button>
 
-            <div
-                id="auth-error"
-                role="alert"
-                aria-live="polite"
-                style="margin-top:12px;padding:10px 14px;background:rgba(255,92,92,.1);border:1px solid var(--er);border-radius:var(--rs);color:var(--er);font-size:.82rem;text-align:center;display:none"
-            ></div>
+            <div id="auth-error" role="alert" aria-live="polite"
+                style="margin-top:12px;padding:10px 14px;background:rgba(255,92,92,.1);border:1px solid var(--er);border-radius:var(--rs);color:var(--er);font-size:.82rem;text-align:center;display:none">
+            </div>
         </div>
     </div>
 
@@ -421,9 +412,12 @@
                             <div class="card">
                                 <h3 class="card-title"><i data-lucide="settings"></i> الإعدادات</h3>
                                 <div class="pomo-settings">
-                                    <label>تركيز <span class="pomo-value"><input type="number" id="pomo-focus-dur" value="25" min="1" max="1000"> دقيقة</span></label>
-                                    <label>استراحة قصيرة <span class="pomo-value"><input type="number" id="pomo-short-dur" value="5" min="1" max="1000"> دقيقة</span></label>
-                                    <label>استراحة طويلة <span class="pomo-value"><input type="number" id="pomo-long-dur" value="15" min="1" max="1000"> دقيقة</span></label>
+                                    <label>تركيز <span class="pomo-value"><input type="number" id="pomo-focus-dur"
+                                                value="25" min="1" max="1000"> دقيقة</span></label>
+                                    <label>استراحة قصيرة <span class="pomo-value"><input type="number"
+                                                id="pomo-short-dur" value="5" min="1" max="1000"> دقيقة</span></label>
+                                    <label>استراحة طويلة <span class="pomo-value"><input type="number"
+                                                id="pomo-long-dur" value="15" min="1" max="1000"> دقيقة</span></label>
                                     <label class="toggle-label"><input type="checkbox" id="pomo-sound" checked> <i
                                             data-lucide="bell"></i> تنبيه صوتي</label>
                                     <label class="toggle-label"><input type="checkbox" id="pomo-notif"
@@ -494,7 +488,7 @@
                                     <textarea id="fc-ai-text" placeholder="الصق ملاحظاتك هنا..." rows="5"
                                         style="margin-bottom:9px"></textarea>
                                     <div class="form-row">
-                                        <input type="number" id="fc-ai-count" value="6" min="2" max="50"
+                                        <input type="number" id="fc-ai-count" value="2" min="1" max="50"
                                             placeholder="عدد البطاقات">
                                     </div>
                                     <div class="form-actions">
