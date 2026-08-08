@@ -1983,13 +1983,18 @@ function buildSystemPrompt() {
         return `▸${s.name}|امتحان:${examStr}|أولوية:${urgency}|دراسة:${studyStr}|أسبوع:${Math.round(last7 / 60 * 10) / 10}h|اليوم:${formatStudyDuration(studiedToday)}|هدف:${goalStr}|بطاقات:${cardsStr}${hint ? ' ' + hint : ''}`;
     }).join('\n') || '▸ لا مواد مسجلة بعد';
 
-    // ── تحليل أنماط الدراسة
+    // ── تحليل أنماط الدراسة — مبني على آخر 30 يوم فقط، ومحتاج شهر كامل بيانات عشان يكون موثوق
+    const last30dates_sp = []; for (let i = 29; i >= 0; i--) { const d = new Date(now); d.setDate(now.getDate() - i); last30dates_sp.push(d.toISOString().slice(0, 10)); }
+    const sess30_sp = allSess.filter(s => last30dates_sp.includes(s.date));
+    const firstSessDate_sp = allSess.reduce((min, s) => (s.date && (!min || s.date < min)) ? s.date : min, null);
+    const daysSinceFirst_sp = firstSessDate_sp ? Math.floor((new Date(today()) - new Date(firstSessDate_sp)) / 86400000) + 1 : 0;
+    const hasBestTimeData = daysSinceFirst_sp >= 30;
     const hourBuckets = Array(24).fill(0);
-    allSess.forEach(s => { if (s.ts) { const h = new Date(s.ts).getHours(); hourBuckets[h] += s.duration; } });
+    sess30_sp.forEach(s => { if (s.ts) { const h = new Date(s.ts).getHours(); hourBuckets[h] += s.duration; } });
     const peakHour = hourBuckets.indexOf(Math.max(...hourBuckets));
     const peakLabel = peakHour < 6 ? 'الفجر/ليلاً' : peakHour < 12 ? 'الصباح' : peakHour < 17 ? 'الظهر/العصر' : 'المساء/الليل';
     const dayBuckets = Array(7).fill(0);
-    allSess.forEach(s => { if (s.date) dayBuckets[new Date(s.date).getDay()] += s.duration; });
+    sess30_sp.forEach(s => { if (s.date) dayBuckets[new Date(s.date).getDay()] += s.duration; });
     const bestDayIdx = dayBuckets.indexOf(Math.max(...dayBuckets));
     const dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 
@@ -2024,7 +2029,7 @@ ${urgentSub ? 'الأخطر: ' + urgentSub.name + ' — باقي ' + formatCount
 
 ## آخر 7 أيام
 ${dailyBreakdown}
-متوسط: ${formatStudyDuration(weekly.avgSession)} | أفضل يوم: ${dayNames[bestDayIdx]} | أفضل وقت: ${peakLabel}
+متوسط: ${formatStudyDuration(weekly.avgSession)}${hasBestTimeData ? ` | أفضل يوم: ${dayNames[bestDayIdx]} | أفضل وقت: ${peakLabel}` : ' | (أفضل يوم/وقت: لسه مفيش شهر بيانات كفاية)'}
 
 ## المواد
 ${subsDetail}
@@ -2254,13 +2259,16 @@ function renderInsights() {
     const masteredCards = G.data.flashDecks.reduce((a, dk) => a + dk.cards.filter(c => c.interval >= 21).length, 0);
     const dueCards = getDueCards().length;
 
-    // أفضل وقت ويوم
+    // أفضل وقت ويوم — مبني على آخر 30 يوم فقط، ومحتاج شهر كامل بيانات عشان التحليل يكون موثوق (حساب مستقل تمامًا، ملوش علاقة بمنطق الانتظام تحت)
+    const firstEverSessDate = allSess.reduce((min, s) => (s.date && (!min || s.date < min)) ? s.date : min, null);
+    const daysSinceFirstEverSess = firstEverSessDate ? Math.floor((new Date(today()) - new Date(firstEverSessDate)) / 86400000) + 1 : 0;
+    const hasBestTimeData = daysSinceFirstEverSess >= 30;
     const hourBuckets = Array(24).fill(0);
-    allSess.forEach(s => { if (s.ts) { const h = new Date(s.ts).getHours(); hourBuckets[h] += s.duration; } });
+    sess30.forEach(s => { if (s.ts) { const h = new Date(s.ts).getHours(); hourBuckets[h] += s.duration; } });
     const peakHour = hourBuckets.indexOf(Math.max(...hourBuckets));
     const peakLabel = peakHour === 0 ? 'منتصف الليل' : peakHour < 6 ? 'فجراً' : peakHour < 12 ? `${peakHour}:00 ص` : peakHour === 12 ? '12:00 ظ' : `${peakHour - 12}:00 م`;
     const dayBuckets = Array(7).fill(0);
-    allSess.forEach(s => { if (s.date) dayBuckets[new Date(s.date).getDay()] += s.duration; });
+    sess30.forEach(s => { if (s.date) dayBuckets[new Date(s.date).getDay()] += s.duration; });
     const bestDayIdx = dayBuckets.indexOf(Math.max(...dayBuckets));
     const dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 
@@ -2271,6 +2279,7 @@ function renderInsights() {
     const consistency30 = Math.round((activeDays30 / consistencyWindow) * 100);
     const consistencyLabel = consistency30 >= 80 ? 'منتظم جداً' : consistency30 >= 50 ? 'منتظم' : consistency30 >= 30 ? 'متقطع' : 'غير منتظم';
     const consistencyColor = consistency30 >= 80 ? 'var(--ok)' : consistency30 >= 50 ? 'var(--p)' : consistency30 >= 30 ? 'var(--wa)' : 'var(--er)';
+
 
     // شارت 7 أيام
     const byDate7 = {};
@@ -2307,7 +2316,7 @@ function renderInsights() {
     if (daysSinceFirst >= 7 && activeDays7 < 3) alerts.push({ type: 'wa', icon: 'calendar', msg: `ذاكرت <bdi>${activeDays7}d</bdi> فقط هذا الأسبوع — الانتظام أهم من الكم` });
     if (avgSession > 0 && avgSession < 20) alerts.push({ type: 'wa', icon: 'timer', msg: `متوسط جلساتك ${formatStudyDuration(avgSession)} — جرّب ${formatStudyDuration(25)} إلى ${formatStudyDuration(45)} للتركيز العميق` });
     if (G.data.streak.count >= 7) alerts.push({ type: 'ok', icon: 'flame', msg: `<bdi><strong>${G.data.streak.count}d</strong></bdi> متتالية! حافظ على هذه السلسلة 🔥` });
-    if (allSess.some(s => s.ts) && hourBuckets[peakHour] > 0) alerts.push({ type: 'ok', icon: 'sun', msg: `أفضل أوقاتك هي <strong>${peakLabel}</strong> — خصصها للمواد الصعبة` });
+    if (hasBestTimeData && sess30.some(s => s.ts) && hourBuckets[peakHour] > 0) alerts.push({ type: 'ok', icon: 'sun', msg: `أفضل أوقاتك هي <strong>${peakLabel}</strong> — خصصها للمواد الصعبة` });
 
     el.innerHTML = `
             <!-- تنبيهات ذكية -->
@@ -2361,8 +2370,10 @@ function renderInsights() {
                     <div style="font-size:.76rem;font-weight:800;color:${consistencyColor}">${consistencyLabel}</div>
                     <div style="font-size:.66rem;color:var(--tm);margin-top:2px"><bdi>${activeDays30}d</bdi> من <bdi>${consistencyWindow}</bdi></div>
                     <div style="margin-top:8px;padding-top:7px;border-top:1px solid var(--bo);display:flex;flex-direction:column;gap:3px">
-                        <div style="font-size:.66rem;color:var(--tm)"> أفضل وقت: <strong style="color:var(--p)">${allSess.some(s => s.ts) ? peakLabel : '—'}</strong></div>
-                        <div style="font-size:.66rem;color:var(--tm)"> أفضل يوم: <strong style="color:var(--p)">${allSess.length > 0 ? dayNames[bestDayIdx] : '—'}</strong></div>
+                        ${hasBestTimeData ? `
+                        <div style="font-size:.66rem;color:var(--tm)"> أفضل وقت: <strong style="color:var(--p)">${sess30.some(s => s.ts) ? peakLabel : '—'}</strong></div>
+                        <div style="font-size:.66rem;color:var(--tm)"> أفضل يوم: <strong style="color:var(--p)">${sess30.length > 0 ? dayNames[bestDayIdx] : '—'}</strong></div>
+                        ` : `<div style="font-size:.62rem;color:var(--tm);line-height:1.5">أفضل وقت ويوم هيظهر بعد <strong style="color:var(--p)">${30 - daysSinceFirstEverSess}</strong> يوم من الاستخدام المنتظم</div>`}
                     </div>
                 </div>
             </div>
