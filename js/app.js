@@ -2259,18 +2259,31 @@ function renderInsights() {
     const masteredCards = G.data.flashDecks.reduce((a, dk) => a + dk.cards.filter(c => c.interval >= 21).length, 0);
     const dueCards = getDueCards().length;
 
-    // أفضل وقت ويوم — مبني على آخر 30 يوم فقط، ومحتاج شهر كامل بيانات عشان التحليل يكون موثوق (حساب مستقل تمامًا، ملوش علاقة بمنطق الانتظام تحت)
+    // أفضل فترة مذاكرة (نافذة 3 ساعات) ويوم — مبني على آخر 30 يوم فقط، ومحتاج شهر كامل بيانات عشان التحليل يكون موثوق (حساب مستقل تمامًا، ملوش علاقة بمنطق الانتظام تحت)
     const firstEverSessDate = allSess.reduce((min, s) => (s.date && (!min || s.date < min)) ? s.date : min, null);
     const daysSinceFirstEverSess = firstEverSessDate ? Math.floor((new Date(today()) - new Date(firstEverSessDate)) / 86400000) + 1 : 0;
     const hasBestTimeData = daysSinceFirstEverSess >= 30;
-    const hourBuckets = Array(24).fill(0);
-    sess30.forEach(s => { if (s.ts) { const h = new Date(s.ts).getHours(); hourBuckets[h] += s.duration; } });
-    const peakHour = hourBuckets.indexOf(Math.max(...hourBuckets));
-    const peakLabel = peakHour === 0 ? 'منتصف الليل' : peakHour < 6 ? 'فجراً' : peakHour < 12 ? `${peakHour}:00 ص` : peakHour === 12 ? '12:00 ظ' : `${peakHour - 12}:00 م`;
-    const dayBuckets = Array(7).fill(0);
-    sess30.forEach(s => { if (s.date) dayBuckets[new Date(s.date).getDay()] += s.duration; });
-    const bestDayIdx = dayBuckets.indexOf(Math.max(...dayBuckets));
-    const dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+
+    // نجمع دقايق كل ساعة + الأيام المختلفة اللي ذاكر فيها الساعة دي (عشان الحماية من يوم واحد بيسيطر على النتيجة)
+    const hourMinutes = Array(24).fill(0);
+    const hourDays = Array.from({ length: 24 }, () => new Set());
+    sess30.forEach(s => { if (s.ts && s.duration) { const h = new Date(s.ts).getHours(); hourMinutes[h] += s.duration; if (s.date) hourDays[h].add(s.date); } });
+
+    // نجرب كل نافذة من 3 ساعات متتالية (بتلف حوالين الـ 24 ساعة)، ومنقبلش نافذة إلا لو 3 أيام مختلفة على الأقل ساهموا فيها
+    const MIN_WINDOW_DAYS = 3;
+    let bestWindow = null;
+    for (let start = 0; start < 24; start++) {
+        const hrs = [start, (start + 1) % 24, (start + 2) % 24];
+        const winMin = hrs.reduce((a, h) => a + hourMinutes[h], 0);
+        const daySet = new Set(); hrs.forEach(h => hourDays[h].forEach(d => daySet.add(d)));
+        if (daySet.size >= MIN_WINDOW_DAYS && (!bestWindow || winMin > bestWindow.min)) {
+            bestWindow = { start, min: winMin, days: daySet.size };
+        }
+    }
+    const hasBestWindow = hasBestTimeData && bestWindow !== null;
+    const fmtClock = h => h === 0 ? '12:00 ص' : h < 12 ? `${h}:00 ص` : h === 12 ? '12:00 م' : `${h - 12}:00 م`;
+    const bestWindowLabel = bestWindow ? `${fmtClock(bestWindow.start)} - ${fmtClock((bestWindow.start + 3) % 24)}` : null;
+    const bestWindowPct = bestWindow && totalMin30 > 0 ? Math.round((bestWindow.min / totalMin30) * 100) : 0;
 
     // نافذة الانتظام: 30 يوم كحد أقصى، أو عدد الأيام الفعلي من أول جلسة مذاكرة لو المستخدم جديد (تفادي ظلمه بالقسمة على 30 وهو لسه بادئ)
     const firstSessDate = allSess.reduce((min, s) => (s.date && (!min || s.date < min)) ? s.date : min, null);
@@ -2316,7 +2329,7 @@ function renderInsights() {
     if (daysSinceFirst >= 7 && activeDays7 < 3) alerts.push({ type: 'wa', icon: 'calendar', msg: `ذاكرت <bdi>${activeDays7}d</bdi> فقط هذا الأسبوع — الانتظام أهم من الكم` });
     if (avgSession > 0 && avgSession < 20) alerts.push({ type: 'wa', icon: 'timer', msg: `متوسط جلساتك ${formatStudyDuration(avgSession)} — جرّب ${formatStudyDuration(25)} إلى ${formatStudyDuration(45)} للتركيز العميق` });
     if (G.data.streak.count >= 7) alerts.push({ type: 'ok', icon: 'flame', msg: `<bdi><strong>${G.data.streak.count}d</strong></bdi> متتالية! حافظ على هذه السلسلة 🔥` });
-    if (hasBestTimeData && sess30.some(s => s.ts) && hourBuckets[peakHour] > 0) alerts.push({ type: 'ok', icon: 'sun', msg: `أفضل أوقاتك هي <strong>${peakLabel}</strong> — خصصها للمواد الصعبة` });
+    if (hasBestWindow) alerts.push({ type: 'ok', icon: 'sun', msg: `أفضل فترة مذاكرة ليك <strong>${bestWindowLabel}</strong> (${bestWindowPct}% من وقتك) — خصصها للمواد الصعبة` });
 
     el.innerHTML = `
             <!-- تنبيهات ذكية -->
@@ -2370,10 +2383,9 @@ function renderInsights() {
                     <div style="font-size:.76rem;font-weight:800;color:${consistencyColor}">${consistencyLabel}</div>
                     <div style="font-size:.66rem;color:var(--tm);margin-top:2px"><bdi>${activeDays30}d</bdi> من <bdi>${consistencyWindow}</bdi></div>
                     <div style="margin-top:8px;padding-top:7px;border-top:1px solid var(--bo);display:flex;flex-direction:column;gap:3px">
-                        ${hasBestTimeData ? `
-                        <div style="font-size:.66rem;color:var(--tm)"> أفضل وقت: <strong style="color:var(--p)">${sess30.some(s => s.ts) ? peakLabel : '—'}</strong></div>
-                        <div style="font-size:.66rem;color:var(--tm)"> أفضل يوم: <strong style="color:var(--p)">${sess30.length > 0 ? dayNames[bestDayIdx] : '—'}</strong></div>
-                        ` : `<div style="font-size:.62rem;color:var(--tm);line-height:1.5">أفضل وقت ويوم هيظهر بعد <strong style="color:var(--p)">${30 - daysSinceFirstEverSess}</strong> يوم من الاستخدام المنتظم</div>`}
+                        ${!hasBestTimeData ? `<div style="font-size:.62rem;color:var(--tm);line-height:1.5">أفضل فترة مذاكرة هتظهر بعد <strong style="color:var(--p)">${30 - daysSinceFirstEverSess}</strong> يوم من الاستخدام المنتظم</div>` : `
+                        ${hasBestWindow ? `<div style="font-size:.66rem;color:var(--tm)"> أفضل فترة: <strong style="color:var(--p)">${bestWindowLabel}</strong> <span>(${bestWindowPct}%)</span></div>` : `<div style="font-size:.6rem;color:var(--tm);line-height:1.5">لسه مفيش نمط واضح لأوقات مذاكرتك</div>`}
+                        `}
                     </div>
                 </div>
             </div>
