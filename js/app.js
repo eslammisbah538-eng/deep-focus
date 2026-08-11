@@ -616,7 +616,7 @@ function buildECCHtml(s, ms, allSubs) {
 
     let unitsHtml = '';
     if (isDone) {
-        unitsHtml = `<div class="ecc-done">✓ انتهى الامتحان — أحسنت!</div>`;
+        unitsHtml = `<div class="ecc-done">انتهى الامتحان — أحسنت!</div>`;
     } else if (ms !== null) {
         const totalSecs = Math.max(0, Math.floor(ms / 1000));
         const d = Math.floor(totalSecs / 86400);
@@ -949,7 +949,7 @@ function buildSubjectCard(s, isArchived, isNearest) {
     const footerActions = isArchived
         ? `<button class="btn-restore" onclick="restoreSubject('${s.id}')"><i data-lucide="rotate-ccw"></i> استعادة</button>`
         : `<div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
-                    ${studiedTodaySc > 0 ? `<span style="font-size:.7rem;font-weight:700;color:var(--ok);background:rgba(16,212,138,.1);padding:3px 8px;border-radius:6px;border:1px solid rgba(16,212,138,.25)">✓ ${formatStudyDuration(studiedTodaySc)}</span>` : ''}
+                    ${studiedTodaySc > 0 ? `<span style="font-size:.7rem;font-weight:700;color:var(--ok);background:rgba(16,212,138,.1);padding:3px 8px;border-radius:6px;border:1px solid rgba(16,212,138,.25)">${formatStudyDuration(studiedTodaySc)}</span>` : ''}
                     <button style="background:var(--p);color:#fff;border:none;padding:4px 11px;border-radius:6px;font-size:.72rem;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:4px;transition:all .2s;font-family:var(--f-b)" onmouseover="this.style.background='var(--pd)'" onmouseout="this.style.background='var(--p)'" onclick="navigatePomodoro('${s.id}')"><i data-lucide="play" style="width:11px;height:11px"></i> ذاكر</button>
                    </div>`;
 
@@ -995,9 +995,9 @@ function autoArchivePastExams(silent) {
         saveData();
         if (!silent) {
             if (autoArchived.length === 1) {
-                showToast('تم أرشفة "' + autoArchived[0] + '" تلقائياً بعد الامتحان ✓', 'success');
+                showToast('تم أرشفة "' + autoArchived[0] + '" تلقائياً بعد الامتحان', 'success');
             } else {
-                showToast('تم أرشفة ' + autoArchived.length + ' مواد تلقائياً بعد امتحاناتها ✓', 'success');
+                showToast('تم أرشفة ' + autoArchived.length + ' مواد تلقائياً بعد امتحاناتها', 'success');
             }
         }
     }
@@ -1149,7 +1149,7 @@ function resetPomo() {
             const session = { id: uid(), subjectId: subId || '', date: today(), duration: elapsedMins, type: 'pomo', ts: Date.now() };
             G.data.sessions.push(session);
             saveData(); updateStreak(); renderPomoLog();
-            showToast('تم حفظ ' + formatStudyDuration(elapsedMins) + ' ✓');
+            showToast('تم حفظ ' + formatStudyDuration(elapsedMins));
         }
     }
     clearInterval(G.pomo.timer);
@@ -1243,7 +1243,7 @@ function selectDeck(id) {
 function renderFCCards(dk) {
     document.getElementById('fc-review-mode').classList.add('hidden'); const grid = document.getElementById('fc-cards-grid');
     if (!dk.cards.length) { grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="es-icon"><i data-lucide="layers"></i></div><p>لا بطاقات بعد</p></div>`; lucide.createIcons(); return; }
-    grid.innerHTML = dk.cards.map(c => `<div class="fc-card-mini"><button class="fc-card-mini-del" onclick="deleteCard('${dk.id}','${c.id}')"><i data-lucide="x-circle"></i></button><div class="fc-card-mini-front">${c.front}</div><div class="fc-card-mini-back">${c.back}</div><div class="fc-card-interval">${c.interval >= 21 ? '★ محفوظة' : c.nextReview && c.nextReview > Date.now() ? '<bdi>' + Math.ceil((c.nextReview - Date.now()) / 86400000) + 'd</bdi>' : 'للمراجعة'}</div></div>`).join('');
+    grid.innerHTML = dk.cards.map(c => `<div class="fc-card-mini"><button class="fc-card-mini-del" onclick="deleteCard('${dk.id}','${c.id}')"><i data-lucide="x-circle"></i></button><div class="fc-card-mini-front">${c.front}</div><div class="fc-card-mini-back">${c.back}</div><div class="fc-card-interval">${c.interval >= 21 ? 'محفوظة' : c.nextReview && c.nextReview > Date.now() ? '<bdi>' + Math.ceil((c.nextReview - Date.now()) / 86400000) + 'd</bdi>' : 'للمراجعة'}</div></div>`).join('');
     lucide.createIcons();
 }
 function deleteDeck(id) { if (!confirm('حذف المجموعة؟')) return; G.data.flashDecks = G.data.flashDecks.filter(d => d.id !== id); if (G.fc.deckId === id) { G.fc.deckId = null; showFCEmpty(); } saveData(); renderFCDecks(); }
@@ -2002,18 +2002,18 @@ function buildSystemPrompt() {
             else if (hLeft <= 336) urgency = 'قريب — 14d';
         }
         let hint = '';
-        if (examEnded) hint = '✓ انتهى — لا متابعة';
-        else if (!examEnded && ms !== null && ms <= 14 * 86400000 && progress !== null && progress < 50) hint = '⚠ تحتاج تسريع';
-        else if (progress !== null && progress >= 80) hint = '✓ قريب من الهدف';
-        else if (studiedToday === 0 && !examEnded && ms !== null && ms <= 7 * 86400000) hint = '🔴 محتاج مذاكرة اليوم';
+        if (examEnded) hint = 'انتهى — لا متابعة';
+        else if (!examEnded && ms !== null && ms <= 14 * 86400000 && progress !== null && progress < 50) hint = 'تحتاج تسريع';
+        else if (progress !== null && progress >= 80) hint = 'قريب من الهدف';
+        else if (studiedToday === 0 && !examEnded && ms !== null && ms <= 7 * 86400000) hint = 'محتاج مذاكرة اليوم';
         const daysStr = daysLeft === null ? 'غ.محدد' : (daysLeft === -1 ? 'انتهى' : `${daysLeft}d`);
         const remainingStr = remainingHours !== 'غ.محدد' ? `${remainingHours}h المتبقية` : '';
         const examStr = cd === null ? 'غ.محدد' : examEnded ? 'انتهى' : cd.text;
         const studyStr = `${Math.round(studied / 60 * 10) / 10}h${target > 0 ? '/' + Math.round(target / 60) + 'h(' + (progress || 0) + '%)' : ''}`;
         const goalStr = goal === null ? 'غ.محدد' : formatStudyDuration(goal);
         const cardsStr = subCards > 0 ? `${subCards}(${subDue}مراجعة،${subMastered}محفوظة)` : '0';
-        return `▸${s.name}|امتحان:${examStr}|أولوية:${urgency}|دراسة:${studyStr}|أسبوع:${Math.round(last7 / 60 * 10) / 10}h|اليوم:${formatStudyDuration(studiedToday)}|هدف:${goalStr}|بطاقات:${cardsStr}${hint ? ' ' + hint : ''}`;
-    }).join('\n') || '▸ لا مواد مسجلة بعد';
+        return `${s.name}|امتحان:${examStr}|أولوية:${urgency}|دراسة:${studyStr}|أسبوع:${Math.round(last7 / 60 * 10) / 10}h|اليوم:${formatStudyDuration(studiedToday)}|هدف:${goalStr}|بطاقات:${cardsStr}${hint ? ' ' + hint : ''}`;
+    }).join('\n') || 'لا مواد مسجلة بعد';
 
     // ── تحليل أنماط الدراسة — مبني على آخر 30 يوم فقط، ومحتاج شهر كامل بيانات عشان يكون موثوق
     const last30dates_sp = []; for (let i = 29; i >= 0; i--) { const d = new Date(now); d.setDate(now.getDate() - i); last30dates_sp.push(d.toISOString().slice(0, 10)); }
@@ -2037,7 +2037,7 @@ function buildSystemPrompt() {
         const dayMin = allSess.filter(s => s.date === d).reduce((a, s) => a + s.duration, 0);
         const isToday = d === today();
         const label = isToday ? 'اليوم' : new Date(d).toLocaleDateString('ar-EG', { weekday: 'short', day: 'numeric' });
-        return `${label}:${formatStudyDuration(dayMin)}${dayMin >= 60 ? '✓' : dayMin === 0 ? '—' : ''}`;
+        return `${label}:${formatStudyDuration(dayMin)}${dayMin === 0 ? '—' : ''}`;
     }).join(' ');
 
     // ── حالة فورية (context للمحادثة)
@@ -2079,7 +2079,7 @@ ${G.data.subjects.filter(s => s.archived).length > 0 ? '\nانتهى امتحا�
 - اختبار مادة=3-5 أسئلة مباشرة بلا مقدمة
 - مادة "انتهى امتحانها"=تجاهلها تمامًا، ركّز على الباقي فقط
 - "هدف اليوم" ياخد من الحقل مباشرة دايمًا، ممنوع تحسبه بنفسك أو توزعه بطريقة تانية
-- جدول اليوم = قائمة "▸ مادة: الوقت" بس. الوقت هنا لازم يتنسخ حرفيًا زي ما هو مكتوب في حقل "هدف" فوق لكل مادة (مثلاً 1h43m) من غير أي تعديل، حساب، أو إعادة صياغة (ممنوع تحوله لدقايق، وممنوع تكتبه "ساعة ودقيقة" أو أي صيغة تانية) + جملة ختام قصيره. استبعد اللي هدفها غير محدد، ولو الكل كذلك اطلب تاريخ امتحان+ساعات هدف
+- جدول اليوم = قائمة "مادة: الوقت" بس. الوقت هنا لازم يتنسخ حرفيًا زي ما هو مكتوب في حقل "هدف" فوق لكل مادة (مثلاً 1h43m) من غير أي تعديل، حساب، أو إعادة صياغة (ممنوع تحوله لدقايق، وممنوع تكتبه "ساعة ودقيقة" أو أي صيغة تانية) + جملة ختام قصيره. استبعد اللي هدفها غير محدد، ولو الكل كذلك اطلب تاريخ امتحان+ساعات هدف
 - "كام دقيقة أذاكر [مادة]؟"=رقم هدف اليوم + تشجيع هادف ، بلا شرح. لو غير محدد قول للمستخدم يدخل البيانات ومتقلش غير محدد لو معندش بيانات قوله حقيقي يعمل ايه بلااختراع رقم من نفسك ممنوع
 - تقييم الأسبوع=3 سطور: حكم(جيد/متوسط/ضعيف)+رقم دليل+نصيحة قصيره هادفه
 - "من فين أبدأ"=خطوة عملية واحدة بلا خطابة
@@ -2109,7 +2109,7 @@ function formatAIReply(raw) {
     // Inline code `code`
     t = t.replace(/`([^`]+)`/g, '<code style="background:var(--s3);padding:1px 6px;border-radius:4px;font-size:.82em">$1</code>');
     // Lines starting with - or • or ▸ → styled list items
-    t = t.replace(/^([\-•▸►✓✗⚠🔴🟡🟢⚡🎯📚🔥💪]) (.+)$/gm, (_, bullet, content) =>
+    t = t.replace(/^([\-•▸►]) (.+)$/gm, (_, bullet, content) =>
         `<div style="display:flex;gap:7px;margin:3px 0;align-items:flex-start"><span style="flex-shrink:0;margin-top:1px">${bullet}</span><span>${content}</span></div>`
     );
     // Lines starting with number. → numbered steps
@@ -2154,7 +2154,7 @@ async function sendAIMessage(text) {
         lucide.createIcons();
     } catch (e) {
         document.getElementById(tid)?.remove();
-        msgs.innerHTML += `<div class="ai-msg"><div class="ai-msg-av"><i data-lucide="bot"></i></div><div class="ai-msg-bubble" style="color:var(--er)">⚠ تأكد من الاتصال وحاول مرة تانية</div></div>`;
+        msgs.innerHTML += `<div class="ai-msg"><div class="ai-msg-av"><i data-lucide="bot"></i></div><div class="ai-msg-bubble" style="color:var(--er)">تأكد من الاتصال وحاول مرة تانية</div></div>`;
     }
     if (sendBtn) sendBtn.disabled = false; requestAnimationFrame(scrollChat);
 }
@@ -2164,13 +2164,13 @@ async function sendAIMessage(text) {
 function buildSubjectProgressRow(s) {
     const dLeft = s.dLeft;
     const urgColor = s.archived ? 'var(--ok)' : dLeft === null ? 'var(--tm)' : dLeft < 0 ? 'var(--ok)' : dLeft <= 3 ? 'var(--er)' : dLeft <= 7 ? 'var(--wa)' : 'var(--p)';
-    const examTxt = s.archived ? '✓' : dLeft === null ? '—' : dLeft < 0 ? 'انتهى' : (s.hLeft !== null && s.hLeft !== undefined && s.hLeft <= 24) ? ltrH(s.hLeft) : ltrD(dLeft);
+    const examTxt = s.archived ? '' : dLeft === null ? '—' : dLeft < 0 ? 'انتهى' : (s.hLeft !== null && s.hLeft !== undefined && s.hLeft <= 24) ? ltrH(s.hLeft) : ltrD(dLeft);
     const studiedH = (s.studied / 60).toFixed(1);
     const targetH = s.target > 0 ? (s.target / 60).toFixed(0) : null;
     const subColor = (!s.color || s.color === 'transparent') ? 'var(--td)' : s.color;
-    const hint = s.archived ? `<span style="color:var(--ok);font-size:.67rem">✓ منتهي</span>` :
-        s.pct !== null && s.pct < 50 && dLeft !== null && dLeft >= 0 && dLeft <= 14 ? `<span style="color:var(--wa);font-size:.67rem">⚠ سرّع</span>` :
-            s.pct !== null && s.pct >= 80 ? `<span style="color:var(--ok);font-size:.67rem">✓ قريب</span>` : '';
+    const hint = s.archived ? `<span style="color:var(--ok);font-size:.67rem">منتهي</span>` :
+        s.pct !== null && s.pct < 50 && dLeft !== null && dLeft >= 0 && dLeft <= 14 ? `<span style="color:var(--wa);font-size:.67rem">سرّع</span>` :
+            s.pct !== null && s.pct >= 80 ? `<span style="color:var(--ok);font-size:.67rem">قريب</span>` : '';
 
     // سطر البطاقات + اليوم
     // badge اليوم الواضح
@@ -2179,15 +2179,15 @@ function buildSubjectProgressRow(s) {
         const goal = getAutoGoal(s);
         if (goal === null) return ''; // مفيش تاريخ امتحان و/أو ساعات هدف محددة — لا أساس لعرض هدف يومي
         if (s.studiedToday >= goal) {
-            return `<span style="font-size:.67rem;font-weight:700;color:var(--ok);background:rgba(16,212,138,.12);padding:2px 8px;border-radius:8px;border:1px solid rgba(16,212,138,.3)">✓ ${formatStudyDuration(s.studiedToday)} <span style="opacity:.6;font-weight:500">من ${formatStudyDuration(goal)}</span></span>`;
+            return `<span style="font-size:.67rem;font-weight:700;color:var(--ok);background:rgba(16,212,138,.12);padding:2px 8px;border-radius:8px;border:1px solid rgba(16,212,138,.3)">${formatStudyDuration(s.studiedToday)} <span style="opacity:.6;font-weight:500">من ${formatStudyDuration(goal)}</span></span>`;
         } else if (s.studiedToday > 0) {
-            return `<span style="font-size:.67rem;font-weight:700;color:var(--wa);background:rgba(255,179,71,.1);padding:2px 8px;border-radius:8px;border:1px solid rgba(255,179,71,.25)">⏱ ${formatStudyDuration(s.studiedToday)} <span style="opacity:.6;font-weight:500">من ${formatStudyDuration(goal)}</span></span>`;
+            return `<span style="font-size:.67rem;font-weight:700;color:var(--wa);background:rgba(255,179,71,.1);padding:2px 8px;border-radius:8px;border:1px solid rgba(255,179,71,.25)">${formatStudyDuration(s.studiedToday)} <span style="opacity:.6;font-weight:500">من ${formatStudyDuration(goal)}</span></span>`;
         } else {
-            return `<span style="font-size:.67rem;font-weight:600;color:var(--td);background:var(--s3);padding:2px 8px;border-radius:8px">○ 0 <span style="opacity:.6">من ${formatStudyDuration(goal)}</span></span>`;
+            return `<span style="font-size:.67rem;font-weight:600;color:var(--td);background:var(--s3);padding:2px 8px;border-radius:8px">0 <span style="opacity:.6">من ${formatStudyDuration(goal)}</span></span>`;
         }
     })();
     const cardsBadge = s.subCards > 0
-        ? `<span style="font-size:.67rem;color:${s.subDue > 0 ? 'var(--wa)' : 'var(--ok)'}">${s.subDue > 0 ? `⏰ ${s.subDue} للمراجعة` : `★ ${s.subMastered}/${s.subCards} محفوظة`}</span>`
+        ? `<span style="font-size:.67rem;color:${s.subDue > 0 ? 'var(--wa)' : 'var(--ok)'}">${s.subDue > 0 ? `${s.subDue} للمراجعة` : `${s.subMastered}/${s.subCards} محفوظة`}</span>`
         : '';
 
     return `<div style="margin-bottom:13px;padding-bottom:13px;border-bottom:1px solid var(--bo);${s.archived ? 'opacity:.6' : ''}">
@@ -2371,7 +2371,7 @@ function renderInsights() {
     if (dueCards > 10) alerts.push({ type: 'wa', icon: 'layers', msg: `<strong>${dueCards}</strong> بطاقة للمراجعة — ${formatStudyDuration(10)} الآن تمنع التراكم` });
     if (daysSinceFirst >= 7 && activeDays7 < 3) alerts.push({ type: 'wa', icon: 'calendar', msg: `ذاكرت <bdi>${activeDays7}d</bdi> فقط هذا الأسبوع — الانتظام أهم من الكم` });
     if (avgSession > 0 && avgSession < 20) alerts.push({ type: 'wa', icon: 'timer', msg: `متوسط جلساتك ${formatStudyDuration(avgSession)} — جرّب ${formatStudyDuration(25)} إلى ${formatStudyDuration(45)} للتركيز العميق` });
-    if (G.data.streak.count >= 7) alerts.push({ type: 'ok', icon: 'flame', msg: `<bdi><strong>${G.data.streak.count}d</strong></bdi> متتالية! حافظ على هذه السلسلة 🔥` });
+    if (G.data.streak.count >= 7) alerts.push({ type: 'ok', icon: 'flame', msg: `<bdi><strong>${G.data.streak.count}d</strong></bdi> متتالية! حافظ على هذه السلسلة` });
     if (hasBestWindow) alerts.push({ type: 'ok', icon: 'sun', msg: `أفضل فترة مذاكرة ليك <strong>${bestWindowLabel}</strong> (${bestWindowPct}% من وقتك) — خصصها للمواد الصعبة` });
 
     el.innerHTML = `
@@ -2496,7 +2496,7 @@ function handlePomoSubjectChange(newSubId) {
             updateStreak();
             renderPomoLog();
             const oldName = G.data.subjects.find(s => s.id === oldSubId)?.name || 'دراسة عامة';
-            showToast('✓ حُفظ ' + formatStudyDuration(elapsedMins) + ' لـ' + oldName);
+            showToast('حُفظ ' + formatStudyDuration(elapsedMins) + ' لـ' + oldName);
         }
     }
     // Reset tracking for new subject (رصيد جديد يبدأ من صفر للمادة الجديدة)
