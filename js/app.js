@@ -741,7 +741,9 @@ function getExamDaysLeft(subject) {
     const ms = getExamMsLeft(subject);
     if (ms === null) return null;
     if (ms <= 0) return -1; // الامتحان انتهى
-    return Math.floor(ms / 86400000);
+    // مقارنة بالتاريخ (تقويميًا) مش بقسمة الوقت المتبقي على 24 ساعة —
+    // عشان "اليوم" ميتغيرش غير مع نص الليل، مش كل ما يفضل أقل من 24 ساعة
+    return daysUntil(subject.examDate);
 }
 // ── صياغة عدد عربي صحيح نحويًا: مفرد (1) / مثنى (2) / جمع (3-10) / تمييز مفرد منصوب (11+)
 // مثال: arCount(1,'يوم','يومين','أيام') → 'يوم' | arCount(2,...) → 'يومين' | arCount(9,...) → '9 أيام' | arCount(19,...) → '19 يوم'
