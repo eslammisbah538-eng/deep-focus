@@ -2160,7 +2160,7 @@ async function sendAIMessage(text) {
 function buildSubjectProgressRow(s) {
     const dLeft = s.dLeft;
     const urgColor = s.archived ? 'var(--ok)' : dLeft === null ? 'var(--tm)' : dLeft < 0 ? 'var(--ok)' : dLeft <= 3 ? 'var(--er)' : dLeft <= 7 ? 'var(--wa)' : 'var(--p)';
-    const examTxt = s.archived ? '✓' : dLeft === null ? '—' : dLeft < 0 ? 'انتهى' : dLeft === 0 ? ltrH(getExamHoursLeft(s) || 0) : ltrD(dLeft);
+    const examTxt = s.archived ? '✓' : dLeft === null ? '—' : dLeft < 0 ? 'انتهى' : (s.hLeft !== null && s.hLeft !== undefined && s.hLeft <= 24) ? ltrH(s.hLeft) : ltrD(dLeft);
     const studiedH = (s.studied / 60).toFixed(1);
     const targetH = s.target > 0 ? (s.target / 60).toFixed(0) : null;
     const subColor = (!s.color || s.color === 'transparent') ? 'var(--td)' : s.color;
@@ -2335,6 +2335,9 @@ function renderInsights() {
         const target = (s.hours || 0) * 60;
         const pct = target > 0 ? Math.min(100, Math.round((studied / target) * 100)) : null;
         const dLeft = getExamDaysLeft(s);
+        // الساعات الفعلية المتبقية (مش الفرق التقويمي) — نحسبها دايمًا عشان أي مكان
+        // يقدر يتحول لعرض بالساعة فور ما يفضل 24 ساعة حقيقية أو أقل، مهما كان dLeft
+        const hLeft = dLeft !== null && dLeft >= 0 ? getExamHoursLeft(s) : null;
         // ماده ممكن يكون ليها أكتر من مجموعة بطاقات — نجمعهم كلهم بدل ما ناخد أول واحدة بس
         const subDecks = G.data.flashDecks.filter(d => d.subjectId === s.id);
         const subCardsAll = subDecks.flatMap(d => d.cards);
@@ -2342,7 +2345,7 @@ function renderInsights() {
         const subMastered = subCardsAll.filter(c => c.interval >= 21).length;
         const subCards = subCardsAll.length;
         const dailyGoal = getAutoGoal(s);
-        return { ...s, studied, studiedToday, target, pct, dLeft, subDue, subMastered, subCards, dailyGoal };
+        return { ...s, studied, studiedToday, target, pct, dLeft, hLeft, subDue, subMastered, subCards, dailyGoal };
     });
     const activeSubProg = subProgress.filter(s => !s.archived);
     const archivedSubProg = subProgress.filter(s => s.archived);
@@ -2350,9 +2353,17 @@ function renderInsights() {
     // تنبيهات ذكية
     const alerts = [];
     G.data.subjects.filter(s => !s.archived && s.examDate && getExamDaysLeft(s) !== null && getExamDaysLeft(s) >= 0 && getExamDaysLeft(s) <= 3)
-        .forEach(s => alerts.push({ type: 'er', icon: 'alert-triangle', msg: `امتحان <strong>${s.name}</strong> ${getExamDaysLeft(s) === 0 ? (arCount(getExamHoursLeft(s) || 0, 'ساعة', 'ساعتين', 'ساعات') + ' فقط!') : 'بعد ' + ltrD(getExamDaysLeft(s)) + ' فقط!'}` }));
+        .forEach(s => {
+            // نتابع الساعات الفعلية المتبقية (مش الفرق التقويمي) عشان التنبيه يتحول لساعات
+            // فور ما يفضل أقل من 24 ساعة حقيقية على الامتحان، مهما كان الفرق بالتاريخ
+            const hrsLeft = getExamHoursLeft(s);
+            const isUnder24h = hrsLeft !== null && hrsLeft <= 24;
+            const timeTxt = isUnder24h ? ltrH(hrsLeft) : 'بعد ' + ltrD(getExamDaysLeft(s));
+            alerts.push({ type: 'er', icon: 'alert-triangle', msg: `امتحان <strong>${s.name}</strong> ${timeTxt} فقط!` });
+        });
     subProgress.filter(s => !s.archived && s.dLeft !== null && s.dLeft >= 0 && s.dLeft <= 14 && s.studied === 0)
-        .forEach(s => alerts.push({ type: 'er', icon: 'book-open', msg: `لم تذاكر <strong>${s.name}</strong> بعد والامتحان بعد ${ltrD(s.dLeft)}` }));
+        // نفس منطق التنبيه بتاع "امتحان X بعد..." — الساعات الفعلية هي اللي بتحدد التحويل، مش الفرق التقويمي
+        .forEach(s => alerts.push({ type: 'er', icon: 'book-open', msg: `لم تذاكر <strong>${s.name}</strong> بعد والامتحان بعد ${s.hLeft !== null && s.hLeft <= 24 ? ltrH(s.hLeft) : ltrD(s.dLeft)}` }));
     if (dueCards > 10) alerts.push({ type: 'wa', icon: 'layers', msg: `<strong>${dueCards}</strong> بطاقة للمراجعة — ${formatStudyDuration(10)} الآن تمنع التراكم` });
     if (daysSinceFirst >= 7 && activeDays7 < 3) alerts.push({ type: 'wa', icon: 'calendar', msg: `ذاكرت <bdi>${activeDays7}d</bdi> فقط هذا الأسبوع — الانتظام أهم من الكم` });
     if (avgSession > 0 && avgSession < 20) alerts.push({ type: 'wa', icon: 'timer', msg: `متوسط جلساتك ${formatStudyDuration(avgSession)} — جرّب ${formatStudyDuration(25)} إلى ${formatStudyDuration(45)} للتركيز العميق` });
