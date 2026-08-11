@@ -151,6 +151,7 @@ function uid() { return '_' + (Date.now() + Math.random()).toString(36).replace(
 // لف الرقم + الوحدة في LTR حتى لا يتفرق في النصوص العربية
 function ltrD(n) { return `<bdi>${n}d</bdi>`; }
 function ltrDt(n) { return n + 'd'; } // نسخة نص فقط (للـ toast والـ system prompt)
+function ltrH(n) { return `<bdi>${n}h</bdi>`; } // نفس فكرة ltrD بس بالساعة — للحالة اللي فاضل فيها أقل من يوم
 function today() { return new Date().toISOString().slice(0, 10); }
 function formatStudyDuration(minutes) {
     const total = Math.max(0, Math.round(Number(minutes) || 0));
@@ -456,7 +457,13 @@ function checkExamReminders() {
     const s = subs[0];
     const isToday = s.examDate === t;
     const calDays = daysUntil(s.examDate);
-    const body = isToday ? ('امتحان ' + s.name + ' النهارده') : ('باقي ' + arCount(calDays, 'يوم', 'يومين', 'أيام') + ' على امتحان ' + s.name);
+    let body;
+    if (isToday) {
+        const hrs = getExamHoursLeft(s);
+        body = hrs !== null ? ('باقي ' + arCount(hrs, 'ساعة', 'ساعتين', 'ساعات') + ' على امتحان ' + s.name) : ('امتحان ' + s.name + ' النهارده');
+    } else {
+        body = 'باقي ' + arCount(calDays, 'يوم', 'يومين', 'أيام') + ' على امتحان ' + s.name;
+    }
     sendAppNotification('تذكير بامتحان', body);
     G.data._lastExamNotifDate = t; saveData();
 }
@@ -744,6 +751,24 @@ function getExamDaysLeft(subject) {
     // مقارنة بالتاريخ (تقويميًا) مش بقسمة الوقت المتبقي على 24 ساعة —
     // عشان "اليوم" ميتغيرش غير مع نص الليل، مش كل ما يفضل أقل من 24 ساعة
     return daysUntil(subject.examDate);
+}
+// عدد الساعات المتبقية بدقة — تستخدم في العرض لما يكون فاضل أقل من يوم كامل (getExamDaysLeft === 0)
+// عشان نقول "فاضل 4 ساعات" بدل "اليوم" الفضفاضة
+function getExamHoursLeft(subject) {
+    const ms = getExamMsLeft(subject);
+    if (ms === null || ms <= 0) return null;
+    return Math.ceil(ms / 3600000);
+}
+// نص عربي موحّد لوقت الامتحان: ساعات لو فاضل أقل من يوم، وإلا أيام — نفس المنطق يتكرر في كذا مكان (إشعارات/تنبيهات/كارت)
+function formatExamUrgency(subject) {
+    const d = getExamDaysLeft(subject);
+    if (d === null) return null;
+    if (d < 0) return 'انتهى الامتحان';
+    if (d === 0) {
+        const h = getExamHoursLeft(subject);
+        return h !== null && h > 0 ? ('باقي ' + arCount(h, 'ساعة', 'ساعتين', 'ساعات')) : 'اليوم';
+    }
+    return 'باقي ' + arCount(d, 'يوم', 'يومين', 'أيام');
 }
 // ── صياغة عدد عربي صحيح نحويًا: مفرد (1) / مثنى (2) / جمع (3-10) / تمييز مفرد منصوب (11+)
 // مثال: arCount(1,'يوم','يومين','أيام') → 'يوم' | arCount(2,...) → 'يومين' | arCount(9,...) → '9 أيام' | arCount(19,...) → '19 يوم'
@@ -2135,7 +2160,7 @@ async function sendAIMessage(text) {
 function buildSubjectProgressRow(s) {
     const dLeft = s.dLeft;
     const urgColor = s.archived ? 'var(--ok)' : dLeft === null ? 'var(--tm)' : dLeft < 0 ? 'var(--ok)' : dLeft <= 3 ? 'var(--er)' : dLeft <= 7 ? 'var(--wa)' : 'var(--p)';
-    const examTxt = s.archived ? '✓' : dLeft === null ? '—' : dLeft < 0 ? 'انتهى' : dLeft === 0 ? 'اليوم!' : ltrD(dLeft);
+    const examTxt = s.archived ? '✓' : dLeft === null ? '—' : dLeft < 0 ? 'انتهى' : dLeft === 0 ? ltrH(getExamHoursLeft(s) || 0) : ltrD(dLeft);
     const studiedH = (s.studied / 60).toFixed(1);
     const targetH = s.target > 0 ? (s.target / 60).toFixed(0) : null;
     const subColor = (!s.color || s.color === 'transparent') ? 'var(--td)' : s.color;
@@ -2325,7 +2350,7 @@ function renderInsights() {
     // تنبيهات ذكية
     const alerts = [];
     G.data.subjects.filter(s => !s.archived && s.examDate && getExamDaysLeft(s) !== null && getExamDaysLeft(s) >= 0 && getExamDaysLeft(s) <= 3)
-        .forEach(s => alerts.push({ type: 'er', icon: 'alert-triangle', msg: `امتحان <strong>${s.name}</strong> ${getExamDaysLeft(s) === 0 ? 'اليوم!' : 'بعد ' + ltrD(getExamDaysLeft(s)) + ' فقط!'}` }));
+        .forEach(s => alerts.push({ type: 'er', icon: 'alert-triangle', msg: `امتحان <strong>${s.name}</strong> ${getExamDaysLeft(s) === 0 ? (arCount(getExamHoursLeft(s) || 0, 'ساعة', 'ساعتين', 'ساعات') + ' فقط!') : 'بعد ' + ltrD(getExamDaysLeft(s)) + ' فقط!'}` }));
     subProgress.filter(s => !s.archived && s.dLeft !== null && s.dLeft >= 0 && s.dLeft <= 14 && s.studied === 0)
         .forEach(s => alerts.push({ type: 'er', icon: 'book-open', msg: `لم تذاكر <strong>${s.name}</strong> بعد والامتحان بعد ${ltrD(s.dLeft)}` }));
     if (dueCards > 10) alerts.push({ type: 'wa', icon: 'layers', msg: `<strong>${dueCards}</strong> بطاقة للمراجعة — ${formatStudyDuration(10)} الآن تمنع التراكم` });
