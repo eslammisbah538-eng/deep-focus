@@ -757,7 +757,11 @@ function getExamDaysLeft(subject) {
 function getExamHoursLeft(subject) {
     const ms = getExamMsLeft(subject);
     if (ms === null || ms <= 0) return null;
-    return Math.ceil(ms / 3600000);
+    // مهم: لازم يستخدم نفس تقريب formatCountdown بالظبط (Math.floor) —
+    // عشان الساعات المعروضة في الإشعارات تطابق كارت المادة والعداد الرئيسي في الداشبورد.
+    // كان فيه Math.ceil هنا قبل كده، فكان بيطلع رقم أكبر بواحد عن الكارت في أي وقت فيه كسور ساعة
+    // (مثلاً باقي 16 ساعة و18 دقيقة كان بيظهر "16 ساعة" في الكارت و"17h" في الإشعار).
+    return Math.floor(ms / 3600000);
 }
 // نص عربي موحّد لوقت الامتحان: ساعات لو فاضل أقل من يوم، وإلا أيام — نفس المنطق يتكرر في كذا مكان (إشعارات/تنبيهات/كارت)
 function formatExamUrgency(subject) {
